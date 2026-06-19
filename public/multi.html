@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Multijoueur — Test de Pédophilité</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#0f0f0f;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;touch-action:manipulation}
+
+.top-bar{width:100%;max-width:780px;display:flex;align-items:center;justify-content:space-between;padding:14px 20px 8px;flex-shrink:0}
+.logo{font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.22)}
+.nav-pills{display:flex;gap:6px}
+.nav-pill{padding:5px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;transition:all 0.15s}
+.nav-pill:hover{color:#fff}
+.nav-pill.active{background:#cd130a;color:#fff;border-color:#cd130a}
+
+.screen{display:none;width:100%;max-width:560px;padding:20px;animation:fadeUp 0.3s ease;flex:1;overflow-y:auto}
+.screen.active{display:flex;flex-direction:column}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* LOBBY */
+.lobby-title{font-size:24px;font-weight:900;margin-bottom:6px}
+.lobby-sub{font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:28px}
+.mode-cards{display:flex;gap:12px;margin-bottom:28px}
+.mode-card{flex:1;background:#1a1a1a;border:1.5px solid rgba(255,255,255,0.08);border-radius:18px;padding:22px 16px;text-align:center;cursor:pointer;transition:all 0.15s}
+.mode-card:hover{border-color:#cd130a;box-shadow:0 0 0 3px rgba(205,19,10,0.15);transform:translateY(-2px)}
+.mc-icon{font-size:36px;margin-bottom:10px}
+.mc-name{font-size:15px;font-weight:800;margin-bottom:4px}
+.mc-desc{font-size:11px;color:rgba(255,255,255,0.4);line-height:1.4}
+.input-row{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.multi-input{width:100%;padding:13px 18px;background:#1a1a1a;border:1.5px solid rgba(255,255,255,0.1);border-radius:14px;color:#fff;font-size:16px;outline:none;text-transform:uppercase;letter-spacing:0.08em;text-align:center;transition:border-color 0.15s}
+.multi-input:focus{border-color:#cd130a}
+.multi-input.pseudo-input{text-transform:none;letter-spacing:0;text-align:left}
+.btn-main{width:100%;padding:14px;background:#cd130a;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;transition:opacity 0.15s,transform 0.1s}
+.btn-main:hover{opacity:0.88}
+.btn-main:active{transform:scale(0.97)}
+.btn-sec{width:100%;padding:13px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s;margin-top:10px}
+.btn-sec:hover{color:#fff;background:rgba(255,255,255,0.1)}
+.error-msg{color:#ef4444;font-size:13px;text-align:center;min-height:18px;margin-top:8px}
+
+/* WAITING */
+.code-box{background:#1a1a1a;border:2px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px;text-align:center;margin-bottom:20px}
+.code-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.4);margin-bottom:8px}
+.code-value{font-size:48px;font-weight:900;letter-spacing:0.2em;color:#fff}
+.code-sub{font-size:12px;color:rgba(255,255,255,0.35);margin-top:6px}
+.players-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.player-row{display:flex;align-items:center;gap:12px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px 16px}
+.player-avatar{width:36px;height:36px;border-radius:50%;background:#cd130a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.player-name{font-size:15px;font-weight:700;flex:1}
+.player-status{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em}
+.player-status.ready{color:#22c55e}
+.player-status.waiting{color:rgba(255,255,255,0.3)}
+.ready-info{font-size:13px;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:12px}
+.btn-start{width:100%;padding:16px;font-size:17px;font-weight:900;background:#cd130a;color:#fff;border:none;border-radius:14px;cursor:pointer;transition:opacity 0.15s,transform 0.1s;letter-spacing:0.04em}
+.btn-start:disabled{opacity:0.3;cursor:not-allowed}
+.btn-start:not(:disabled):hover{opacity:0.88}
+.btn-start:not(:disabled):active{transform:scale(0.97)}
+
+/* COUNTDOWN */
+#screen-countdown{align-items:center;justify-content:center;gap:16px;text-align:center}
+.countdown-num{font-size:120px;font-weight:900;line-height:1;color:#cd130a;animation:pop 0.4s ease}
+@keyframes pop{from{transform:scale(1.4);opacity:0}to{transform:scale(1);opacity:1}}
+.countdown-sub{font-size:16px;color:rgba(255,255,255,0.45)}
+
+/* GAME */
+#screen-game-multi{padding:8px 14px 6px;overflow:hidden}
+.multi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0}
+.multi-scores{display:flex;gap:10px}
+.score-chip{background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:999px;padding:4px 14px;font-size:13px;font-weight:700}
+.score-chip.me{border-color:#cd130a;color:#fff}
+.score-chip.opp{color:rgba(255,255,255,0.6)}
+.timer-bar{height:4px;background:#1a1a1a;border-radius:99px;overflow:hidden;margin-bottom:4px;flex-shrink:0}
+.timer-fill{height:100%;border-radius:99px;background:linear-gradient(to right,#22c55e,#f59e0b,#ef4444);transition:width 1s linear}
+.timer-num{font-size:11px;color:rgba(255,255,255,0.35);text-align:right;margin-bottom:6px;flex-shrink:0}
+
+/* Carte photo */
+.multi-card{position:relative;border-radius:18px;overflow:hidden;flex:1;min-height:0;box-shadow:0 8px 40px rgba(0,0,0,0.4);margin-bottom:8px}
+.multi-card img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.multi-card-grad{position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(to top,rgba(0,0,0,0.8),transparent);pointer-events:none}
+.multi-question{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:15px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,0.7);padding:0 16px}
+
+/* Question texte (sans photo) */
+.multi-card.no-photo{background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;padding:28px}
+.multi-card.no-photo .text-q{font-size:20px;font-weight:800;color:#fff;text-align:center;line-height:1.4}
+
+/* Chien-meuf */
+.dog-wrap{position:absolute;inset:0;display:flex}
+.dog-half{flex:1;position:relative;cursor:pointer;transition:filter 0.15s}
+.dog-half:hover{filter:brightness(1.3)}
+.dog-half.selected{outline:4px solid #cd130a}
+.dog-half img{width:100%;height:100%;object-fit:cover;object-position:center}
+.dog-half-label{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:13px;font-weight:800;text-transform:uppercase;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.8);letter-spacing:0.06em}
+.dog-divider{position:absolute;left:50%;top:0;bottom:0;width:3px;background:#fff;transform:translateX(-50%);z-index:5;pointer-events:none}
+
+/* Age guess slider */
+.age-slider-wrap{position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(to top,rgba(0,0,0,0.9) 60%,transparent);z-index:10}
+.age-display{font-size:40px;font-weight:900;text-align:center;color:#fff;line-height:1;margin-bottom:8px}
+input[type=range].mg-slider{width:100%;-webkit-appearance:none;height:6px;border-radius:99px;background:#cd130a;outline:none;cursor:pointer}
+input[type=range].mg-slider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid #cd130a;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+
+/* Answered dots */
+.answered-row{display:flex;gap:8px;justify-content:center;margin-bottom:6px;flex-shrink:0}
+.answered-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.15);transition:background 0.3s}
+.answered-dot.done{background:#22c55e}
+
+/* Choix */
+.multi-choices{display:flex;gap:8px;flex-shrink:0}
+.choice-btn{flex:1;padding:12px 8px;border-radius:14px;border:2px solid transparent;font-size:14px;font-weight:800;cursor:pointer;transition:all 0.15s;letter-spacing:0.02em}
+.choice-btn.green{background:rgba(34,197,94,0.12);border-color:#22c55e;color:#22c55e}
+.choice-btn.green:hover,.choice-btn.green.selected{background:#22c55e;color:#fff}
+.choice-btn.red{background:rgba(239,68,68,0.12);border-color:#ef4444;color:#ef4444}
+.choice-btn.red:hover,.choice-btn.red.selected{background:#ef4444;color:#fff}
+.choice-btn.yellow{background:rgba(245,158,11,0.12);border-color:#f59e0b;color:#f59e0b}
+.choice-btn.yellow:hover,.choice-btn.yellow.selected{background:#f59e0b;color:#fff}
+.choice-btn:disabled{opacity:0.45;cursor:not-allowed}
+
+/* ROUND REVEAL */
+#round-reveal{position:fixed;inset:0;background:rgba(0,0,0,0.88);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:200;animation:fadeUp 0.25s ease;padding:24px}
+.rr-title{font-size:16px;font-weight:700;color:rgba(255,255,255,0.6)}
+.rr-result{font-size:24px;font-weight:900;color:#fff;text-align:center}
+.rr-answers{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.rr-answer{background:#1a1a1a;border:2px solid rgba(255,255,255,0.1);border-radius:16px;padding:14px 20px;text-align:center;min-width:130px}
+.rr-answer .ra-pseudo{font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.rr-answer .ra-val{font-size:14px;font-weight:800;margin-bottom:4px}
+.rr-answer .ra-icon{font-size:24px}
+.rr-answer.correct{border-color:#22c55e}
+.rr-answer.wrong{border-color:#ef4444}
+.rr-answer.neutral{border-color:rgba(255,255,255,0.2)}
+
+/* END */
+#screen-end-multi{align-items:center;text-align:center;gap:16px}
+.end-trophy{font-size:72px}
+.end-title{font-size:22px;font-weight:900}
+.end-scores-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin:4px 0}
+.end-score-box{background:#1a1a1a;border:1.5px solid rgba(255,255,255,0.08);border-radius:18px;padding:20px 14px}
+.end-score-box.winner{border-color:#f59e0b}
+.esb-pseudo{font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+.esb-score{font-size:52px;font-weight:900;line-height:1}
+.esb-label{font-size:11px;color:rgba(255,255,255,0.35);margin-top:4px}
+.esb-badge{font-size:11px;font-weight:800;color:#f59e0b;margin-top:8px;letter-spacing:0.08em}
+.compat-bar{width:100%}
+.compat-label{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px}
+.compat-track{height:8px;background:#1a1a1a;border-radius:99px;overflow:hidden}
+.compat-fill{height:100%;background:linear-gradient(to right,#22c55e,#f59e0b);border-radius:99px;transition:width 1s ease}
+.end-btns{display:flex;gap:10px;width:100%}
+.end-btn-sec{flex:1;padding:13px;background:#1a1a1a;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s}
+.end-btn-sec:hover{color:#fff;background:rgba(255,255,255,0.08)}
+.end-btn-main{flex:1;padding:13px;background:#cd130a;color:#fff;border:none;border-radius:14px;font-size:14px;font-weight:800;cursor:pointer;transition:opacity 0.15s}
+.end-btn-main:hover{opacity:0.88}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">Test de Pédophilité</div>
+  <div class="nav-pills">
+    <a class="nav-pill" href="/">Accueil</a>
+    <a class="nav-pill" href="/game">Game</a>
+    <a class="nav-pill active">Multi</a>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div class="screen active" id="screen-lobby">
+  <div class="lobby-title">👥 Multijoueur</div>
+  <div class="lobby-sub">Jouez à deux et comparez vos réponses en temps réel</div>
+  <div class="mode-cards">
+    <div class="mode-card" onclick="showCreate()">
+      <div class="mc-icon">🏠</div>
+      <div class="mc-name">Créer</div>
+      <div class="mc-desc">Génère un code à partager</div>
+    </div>
+    <div class="mode-card" onclick="showJoin()">
+      <div class="mc-icon">🔑</div>
+      <div class="mc-name">Rejoindre</div>
+      <div class="mc-desc">Entre le code de ton ami</div>
+    </div>
+  </div>
+  <div id="create-form" style="display:none;flex-direction:column;gap:10px;">
+    <input class="multi-input pseudo-input" id="pseudo-create" placeholder="Ton pseudo" maxlength="16"/>
+    <button class="btn-main" onclick="createRoom()">Créer la partie →</button>
+    <button class="btn-sec" onclick="hideAll()">← Retour</button>
+  </div>
+  <div id="join-form" style="display:none;flex-direction:column;gap:10px;">
+    <input class="multi-input pseudo-input" id="pseudo-join" placeholder="Ton pseudo" maxlength="16"/>
+    <input class="multi-input" id="code-join" placeholder="CODE" maxlength="5"/>
+    <button class="btn-main" onclick="joinRoom()">Rejoindre →</button>
+    <button class="btn-sec" onclick="hideAll()">← Retour</button>
+  </div>
+  <div class="error-msg" id="lobby-err"></div>
+</div>
+
+<!-- WAITING -->
+<div class="screen" id="screen-waiting">
+  <div class="code-box">
+    <div class="code-label">Code de la partie</div>
+    <div class="code-value" id="display-code">—</div>
+    <div class="code-sub">Partage ce code à ton ami</div>
+  </div>
+  <div class="players-list" id="players-list"></div>
+  <div class="ready-info" id="ready-info">En attente des joueurs…</div>
+  <button class="btn-start" id="btn-start" onclick="playerReady()" disabled>🚀 Je suis prêt !</button>
+</div>
+
+<!-- COUNTDOWN -->
+<div class="screen" id="screen-countdown">
+  <div class="countdown-num" id="countdown-num">3</div>
+  <div class="countdown-sub">La partie commence…</div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="screen-game-multi">
+  <div class="multi-header">
+    <div class="multi-scores">
+      <div class="score-chip me"  id="score-me">Moi : 0</div>
+      <div class="score-chip opp" id="score-opp">Adv : 0</div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.3);" id="round-counter">1 / 20</div>
+  </div>
+  <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+  <div class="timer-num"><span id="timer-num">20</span>s</div>
+
+  <div class="multi-card" id="multi-card">
+    <img id="multi-photo" src="" alt="" style="display:none"/>
+    <div class="multi-card-grad" id="multi-grad"></div>
+    <div class="multi-question" id="multi-question"></div>
+    <!-- age slider -->
+    <div class="age-slider-wrap" id="age-slider-wrap" style="display:none">
+      <div class="age-display" id="age-display">25 ans</div>
+      <input type="range" class="mg-slider" id="mg-slider" min="11" max="60" value="25"
+        oninput="document.getElementById('age-display').textContent=this.value+' ans'"/>
+    </div>
+    <!-- chien meuf -->
+    <div class="dog-wrap" id="dog-wrap" style="display:none">
+      <div class="dog-half" id="dog-left" onclick="dogChoose('left')">
+        <div class="dog-half-label" id="dog-left-label">La meuf</div>
+      </div>
+      <div class="dog-divider"></div>
+      <div class="dog-half" id="dog-right" onclick="dogChoose('right')">
+        <div class="dog-half-label" id="dog-right-label">Le chien</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="answered-row">
+    <div class="answered-dot" id="dot-me"></div>
+    <div class="answered-dot" id="dot-opp"></div>
+  </div>
+  <div class="multi-choices" id="multi-choices"></div>
+</div>
+
+<!-- ROUND REVEAL -->
+<div id="round-reveal">
+  <div class="rr-title" id="rr-title">La réponse était…</div>
+  <div class="rr-result" id="rr-result"></div>
+  <div class="rr-answers" id="rr-answers"></div>
+</div>
+
+<!-- END -->
+<div class="screen" id="screen-end-multi">
+  <div class="end-trophy" id="end-trophy">🏆</div>
+  <div class="end-title" id="end-title">Fin de partie !</div>
+  <div class="end-scores-grid" id="end-scores-grid"></div>
+  <div class="compat-bar">
+    <div class="compat-label"><span>Compatibilité</span><span id="compat-pct">0%</span></div>
+    <div class="compat-track"><div class="compat-fill" id="compat-fill" style="width:0%"></div></div>
+  </div>
+  <div class="end-btns" style="margin-top:8px;">
+    <button class="end-btn-sec" onclick="location.href='/game'">← Menu</button>
+    <button class="end-btn-main" onclick="location.reload()">↩ Rejouer</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io()
+let myId='', myPseudo='', roomCode='', answered=false
+let currentQtype='', currentDogIsChienne=false, myScore=0, oppScore=0, oppPseudo=''
+
+/* ── NAV ── */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+}
+function showErr(m){document.getElementById('lobby-err').textContent=m}
+function showCreate(){hideAll();document.getElementById('create-form').style.display='flex'}
+function showJoin(){hideAll();document.getElementById('join-form').style.display='flex'}
+function hideAll(){document.getElementById('create-form').style.display='none';document.getElementById('join-form').style.display='none';showErr('')}
+
+/* ── LOBBY ── */
+function createRoom(){
+  myPseudo=document.getElementById('pseudo-create').value.trim()
+  if(!myPseudo)return showErr('Entre ton pseudo')
+  socket.emit('create-room',{pseudo:myPseudo})
+}
+function joinRoom(){
+  myPseudo=document.getElementById('pseudo-join').value.trim()
+  const code=document.getElementById('code-join').value.trim().toUpperCase()
+  if(!myPseudo)return showErr('Entre ton pseudo')
+  if(!code)return showErr('Entre le code')
+  socket.emit('join-room',{code,pseudo:myPseudo})
+}
+function playerReady(){
+  const btn=document.getElementById('btn-start')
+  btn.disabled=true; btn.textContent='✅ Prêt !'; btn.style.background='#22c55e'
+  socket.emit('player-ready')
+}
+
+/* ── GAME ── */
+function sendAnswer(answer){
+  if(answered)return
+  answered=true
+  socket.emit('multi-answer',{answer})
+  document.querySelectorAll('.choice-btn').forEach(b=>{b.disabled=true;if(b.dataset.val===answer)b.classList.add('selected')})
+  document.getElementById('dot-me').classList.add('done')
+  // Si age-guess : valider le slider
+  if(currentQtype==='age-guess'){
+    document.getElementById('age-slider-wrap').style.pointerEvents='none'
+  }
+}
+
+function sendAgeAnswer(){
+  const val=document.getElementById('mg-slider').value
+  sendAnswer('age:'+val)
+}
+
+function dogChoose(side){
+  if(answered)return
+  const answer=side==='left'?'La meuf':'Le chien'
+  document.getElementById('dog-left').classList.toggle('selected',side==='left')
+  document.getElementById('dog-right').classList.toggle('selected',side==='right')
+  sendAnswer(answer)
+}
+
+/* ── RENDER ROUND ── */
+socket.on('connect',()=>{myId=socket.id})
+
+socket.on('room-created',({code})=>{
+  roomCode=code
+  document.getElementById('display-code').textContent=code
+  renderPlayers([{id:socket.id,pseudo:myPseudo}])
+  showScreen('screen-waiting')
+})
+
+socket.on('room-joined',({players})=>{
+  renderPlayers(players)
+  document.getElementById('ready-info').textContent='Les deux joueurs sont là ! Cliquez Start quand vous êtes prêts.'
+  document.getElementById('btn-start').disabled=false
+  const opp=players.find(p=>p.id!==socket.id)
+  if(opp){oppPseudo=opp.pseudo}
+  showScreen('screen-waiting')
+})
+
+socket.on('ready-update',({readyCount,total})=>{
+  document.getElementById('ready-info').textContent=readyCount+' / '+total+' joueur(s) prêt(s)'
+  // Marquer comme prêt localement
+  const myStatus=document.getElementById('status-'+socket.id)
+  if(myStatus){myStatus.textContent='Prêt !';myStatus.className='player-status ready'}
+})
+
+socket.on('countdown',({count})=>{
+  showScreen('screen-countdown')
+  const el=document.getElementById('countdown-num')
+  el.style.animation='none'; void el.offsetWidth; el.style.animation=''
+  el.textContent=count
+})
+
+socket.on('round-start',({idx,total,photo,question,choices,qtype,realType,dogIsChienne,timeLeft})=>{
+  showScreen('screen-game-multi')
+  answered=false
+  currentQtype=qtype
+  currentDogIsChienne=dogIsChienne
+
+  document.getElementById('round-counter').textContent=(idx+1)+' / '+total
+  document.getElementById('timer-fill').style.transition='none'
+  document.getElementById('timer-fill').style.width='100%'
+  document.getElementById('timer-num').textContent=timeLeft
+  document.getElementById('dot-me').classList.remove('done')
+  document.getElementById('dot-opp').classList.remove('done')
+  document.getElementById('round-reveal').style.display='none'
+  document.getElementById('multi-question').textContent=question
+  document.getElementById('multi-question').style.display='block'
+
+  // Reset tous les widgets
+  const photoEl=document.getElementById('multi-photo')
+  const grad=document.getElementById('multi-grad')
+  const ageWrap=document.getElementById('age-slider-wrap')
+  const dogWrap=document.getElementById('dog-wrap')
+  const card=document.getElementById('multi-card')
+
+  photoEl.style.display='none'
+  ageWrap.style.display='none'
+  ageWrap.style.pointerEvents='auto'
+  dogWrap.style.display='none'
+  card.className='multi-card'
+  grad.style.display='block'
+
+  document.getElementById('dog-left').classList.remove('selected')
+  document.getElementById('dog-right').classList.remove('selected')
+  document.getElementById('mg-slider').value=25
+  document.getElementById('age-display').textContent='25 ans'
+
+  // Selon le type
+  // Nettoyer ancien text-q
+  const oldTq=card.querySelector('.text-q')
+  if(oldTq)oldTq.remove()
+
+  if(qtype==='texte'){
+    card.classList.add('no-photo')
+    grad.style.display='none'
+    document.getElementById('multi-question').style.display='none'
+    photoEl.style.display='none'
+    const tq=document.createElement('div')
+    tq.className='text-q'
+    tq.textContent=question
+    card.appendChild(tq)
+  } else {
+    if(photo){
+      photoEl.src=photo
+      photoEl.style.display='block'
+    }
+    if(qtype==='age-guess'){
+      ageWrap.style.display='block'
+    }
+    if(qtype==='chien-meuf'&&photo){
+      // Afficher photo en fond, split en deux cliquables
+      dogWrap.style.display='flex'
+      // Les deux moitiés affichent la même image, clippée
+      const leftImg=document.getElementById('dog-left').querySelector('img')||document.createElement('img')
+      leftImg.src=photo
+      leftImg.style.cssText='width:200%;height:100%;object-fit:cover;object-position:left center;position:absolute;left:0;top:0;'
+      if(!document.getElementById('dog-left').querySelector('img'))document.getElementById('dog-left').insertBefore(leftImg,document.getElementById('dog-left').firstChild)
+
+      const rightImg=document.getElementById('dog-right').querySelector('img')||document.createElement('img')
+      rightImg.src=photo
+      rightImg.style.cssText='width:200%;height:100%;object-fit:cover;object-position:right center;position:absolute;right:0;top:0;'
+      if(!document.getElementById('dog-right').querySelector('img'))document.getElementById('dog-right').insertBefore(rightImg,document.getElementById('dog-right').firstChild)
+    }
+  }
+
+  // Boutons choix
+  const wrap=document.getElementById('multi-choices')
+  wrap.innerHTML=''
+  if(qtype==='age-guess'){
+    const btn=document.createElement('button')
+    btn.className='choice-btn green'
+    btn.style.flex='1'
+    btn.textContent='Valider mon estimation →'
+    btn.onclick=sendAgeAnswer
+    wrap.appendChild(btn)
+  } else if(qtype==='chien-meuf'){
+    wrap.innerHTML='' // pas de boutons, clic sur les moitiés
+  } else if(choices){
+    const colors=['green','red','yellow']
+    choices.forEach((c,i)=>{
+      const btn=document.createElement('button')
+      btn.className='choice-btn '+colors[i]
+      btn.textContent=c
+      btn.dataset.val=c
+      btn.onclick=()=>sendAnswer(c)
+      wrap.appendChild(btn)
+    })
+  }
+
+  // Timer
+  setTimeout(()=>{
+    document.getElementById('timer-fill').style.transition='width '+timeLeft+'s linear'
+    document.getElementById('timer-fill').style.width='0%'
+  },50)
+})
+
+socket.on('timer',({t})=>{document.getElementById('timer-num').textContent=t})
+
+socket.on('answer-received',({playerId})=>{
+  if(playerId!==socket.id)document.getElementById('dot-opp').classList.add('done')
+})
+
+socket.on('round-result',({photo,realType,realAge,qtype,question,dogIsChienne,answers,scores})=>{
+  // Scores
+  scores.forEach(s=>{
+    if(s.id===socket.id){myScore=s.score;document.getElementById('score-me').textContent='Moi : '+myScore}
+    else{oppScore=s.score;oppPseudo=s.pseudo;document.getElementById('score-opp').textContent=s.pseudo+' : '+oppScore}
+  })
+
+  // Reveal
+  const reveal=document.getElementById('round-reveal')
+  const rr=document.getElementById('rr-result')
+  const title=document.getElementById('rr-title')
+
+  if(qtype==='mineur-pas'){
+    title.textContent='La réponse était…'
+    rr.textContent=realType==='mineur'?'← Mineur':'Pas mineur →'
+    rr.style.color=realType==='mineur'?'#22c55e':'#ef4444'
+  } else if(qtype==='age-guess'){
+    title.textContent='Elle avait…'
+    rr.textContent=realAge!=null?(realAge+' ans !'):(realType==='mineur'?'Moins de 18 ans !':'Plus de 18 ans !')
+    rr.style.color='#f59e0b'
+  } else if(qtype==='chien-meuf'){
+    title.textContent='La chienne était…'
+    rr.textContent=dogIsChienne?'🐶 Le chien !':'👩 La meuf !'
+    rr.style.color='#f59e0b'
+  } else {
+    title.textContent='Vos réponses'
+    rr.textContent=question
+    rr.style.color='rgba(255,255,255,0.8)'
+    rr.style.fontSize='14px'
+    // Vérifier concordance
+    const vals=Object.values(answers).map(a=>a.answer).filter(Boolean)
+    if(vals.length===2&&vals[0]===vals[1]){
+      const bonus=document.createElement('div')
+      bonus.style.cssText='font-size:13px;color:#22c55e;font-weight:700;'
+      bonus.textContent='✅ Meme reponse ! +1 pour les deux'
+      document.getElementById('round-reveal').appendChild(bonus)
+      setTimeout(()=>bonus.remove(),2500)
+    }
+  }
+
+  // Cartes réponses
+  const answersEl=document.getElementById('rr-answers')
+  answersEl.innerHTML=''
+  Object.entries(answers).forEach(([pid,a])=>{
+    const isMe=pid===socket.id
+    const div=document.createElement('div')
+
+    let cssClass='neutral', displayVal='', displayIcon=''
+
+    if(a.timeout){
+      cssClass='wrong'; displayVal='Timeout'; displayIcon='⏱️'
+    } else if(qtype==='mineur-pas'&&a.answer&&realType){
+      const correct=(a.answer==='Mineur'&&realType==='mineur')||(a.answer==='Pas mineur'&&realType==='majeur')
+      cssClass=correct?'correct':'wrong'
+      displayVal=a.answer
+      displayIcon=correct?'✅':'❌'
+    } else if(qtype==='age-guess'&&a.answer){
+      const ageGuess=parseInt((a.answer||'').replace('age:',''))
+      displayVal=isNaN(ageGuess)?'—':ageGuess+' ans'
+      if(realAge!=null){
+        const ok=Math.abs(ageGuess-realAge)<=1
+        cssClass=ok?'correct':'wrong'
+        displayIcon=ok?'✅':'❌ ('+realAge+' ans)'
+      } else {
+        displayIcon=''
+      }
+    } else {
+      // texte / sortir-avec / neutre
+      displayVal=a.answer||'—'
+      displayIcon=''
+    }
+
+    div.className='rr-answer '+cssClass
+    div.innerHTML=
+      '<div class="ra-pseudo">'+(isMe?'Toi':a.pseudo)+'</div>'+
+      '<div class="ra-val">'+displayVal+'</div>'+
+      (displayIcon?'<div class="ra-icon">'+displayIcon+'</div>':'')
+    answersEl.appendChild(div)
+  })
+
+  reveal.style.display='flex'
+})
+
+socket.on('game-end',({scores,total})=>{
+  document.getElementById('round-reveal').style.display='none'
+  showScreen('screen-end-multi')
+
+  const sorted=[...scores].sort((a,b)=>b.score-a.score)
+  const winner=sorted[0]
+  const me=scores.find(s=>s.id===socket.id)
+  const opp=scores.find(s=>s.id!==socket.id)
+
+  let same=0
+  if(me&&opp){
+    me.answers.forEach((a,i)=>{
+      if(opp.answers[i]&&a.answer===opp.answers[i].answer)same++
+    })
+  }
+  const compat=me?Math.round(same/Math.max(1,me.answers.length)*100):0
+
+  document.getElementById('end-trophy').textContent=winner?.id===socket.id?'🏆':'🥈'
+  document.getElementById('end-title').textContent=winner?.id===socket.id?'Tu as gagné !':''+opp?.pseudo+' a gagné !'
+
+  const grid=document.getElementById('end-scores-grid')
+  grid.innerHTML=''
+  scores.forEach(s=>{
+    const isWin=s.id===winner.id
+    const isMe=s.id===socket.id
+    const box=document.createElement('div')
+    box.className='end-score-box'+(isWin?' winner':'')
+    box.innerHTML=
+      '<div class="esb-pseudo">'+(isMe?'Toi':s.pseudo)+'</div>'+
+      '<div class="esb-score" style="color:'+(isWin?'#f59e0b':'#fff')+'">'+s.score+'</div>'+
+      '<div class="esb-label">/ '+total+' bonnes</div>'+
+      (isWin?'<div class="esb-badge">🏆 GAGNANT</div>':'')
+    grid.appendChild(box)
+  })
+
+  document.getElementById('compat-pct').textContent=compat+'%'
+  setTimeout(()=>{document.getElementById('compat-fill').style.width=compat+'%'},300)
+})
+
+socket.on('player-left',({pseudo})=>{alert(pseudo+' a quitté la partie.');location.reload()})
+socket.on('join-error',msg=>showErr(msg))
+socket.on('error',msg=>showErr(msg))
+
+/* ── PLAYERS ── */
+function renderPlayers(players){
+  const list=document.getElementById('players-list')
+  list.innerHTML=''
+  players.forEach((p,i)=>{
+    const row=document.createElement('div')
+    row.className='player-row'
+    row.innerHTML=
+      '<div class="player-avatar">'+(i===0?'👤':'👥')+'</div>'+
+      '<div class="player-name">'+p.pseudo+(p.id===socket.id?' (toi)':'')+'</div>'+
+      '<div class="player-status waiting" id="status-'+p.id+'">En attente</div>'
+    list.appendChild(row)
+  })
+  if(players.length<2){
+    const row=document.createElement('div')
+    row.className='player-row'
+    row.style.opacity='0.4'
+    row.innerHTML='<div class="player-avatar">👥</div><div class="player-name" style="color:rgba(255,255,255,0.4);">En attente du 2ème joueur…</div>'
+    list.appendChild(row)
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Admin — Tri photos</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #0a0a0a;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── LOGIN ── */
+#login-screen {
+  position: fixed; inset: 0;
+  background: #0a0a0a;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; z-index: 100; padding: 24px;
+}
+#login-screen.hidden { display: none; }
+.login-title { font-size: 22px; font-weight: 800; }
+.login-sub   { font-size: 13px; color: rgba(255,255,255,0.4); }
+#pwd-input {
+  width: 280px; padding: 13px 18px;
+  background: #1a1a1a; border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 12px; color: #fff; font-size: 16px;
+  outline: none; text-align: center; letter-spacing: 0.1em;
+}
+#pwd-input:focus { border-color: #cd130a; }
+#login-btn {
+  padding: 13px 40px; background: #cd130a; color: #fff;
+  border: none; border-radius: 999px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: opacity 0.15s;
+}
+#login-btn:hover { opacity: 0.85; }
+.login-err { color: #ef4444; font-size: 13px; display: none; }
+
+/* ── TOP BAR ── */
+.top-bar {
+  width: 100%; max-width: 780px;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 8px;
+  flex-shrink: 0;
+}
+.logo { font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.22); }
+.counter-pill {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px; padding: 4px 14px;
+  font-size: 13px; color: rgba(255,255,255,0.5);
+  display: flex; gap: 6px;
+}
+.counter-pill b { color: #fff; }
+
+/* undo button */
+#btn-undo {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 16px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px; color: rgba(255,255,255,0.6);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+#btn-undo:hover { background: rgba(255,255,255,0.12); color: #fff; }
+#btn-undo:disabled { opacity: 0.3; cursor: default; }
+
+/* ── CARD SCENE ── */
+.card-scene {
+  position: relative;
+  width: 100%; max-width: 780px;
+  flex: 1; min-height: 0;
+  display: flex; align-items: stretch;
+  padding: 0 14px 6px;
+}
+.ghost-card {
+  position: absolute; border-radius: 22px;
+  background: #1a1a1a; border: 1px solid rgba(255,255,255,0.06);
+  pointer-events: none;
+  left: 14px; right: 14px; top: 0; bottom: 6px;
+}
+.ghost-card:nth-child(1) { transform: translateY(12px) scale(0.955); opacity: 0.55; z-index: 1; }
+.ghost-card:nth-child(2) { transform: translateY(24px) scale(0.91);  opacity: 0.3;  z-index: 0; }
+
+#card {
+  position: relative; width: 100%;
+  border-radius: 22px; overflow: hidden;
+  background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08);
+  z-index: 10; cursor: grab;
+  transform-origin: center 110%;
+  will-change: transform;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+  flex: 1;
+}
+#card:active { cursor: grabbing; }
+#card img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+  display: block; pointer-events: none; border-radius: 22px;
+}
+.card-grad {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 42%;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  border-radius: 0 0 22px 22px; pointer-events: none; z-index: 2;
+}
+
+/* swipe overlays */
+.swipe-ov {
+  position: absolute; inset: 0; border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; z-index: 20;
+  background: rgba(0,0,0,0.15);
+}
+.ov-stamp {
+  font-size: 30px; font-weight: 900;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 8px 28px; border-radius: 12px; border: 4px solid;
+}
+#ov-min .ov-stamp { color: #4ade80; border-color: #4ade80; transform: rotate(-8deg); }
+#ov-maj .ov-stamp { color: #f87171; border-color: #f87171; transform: rotate(8deg);  }
+
+/* flash */
+#flash {
+  position: absolute; inset: 0; border-radius: 22px;
+  opacity: 0; pointer-events: none; z-index: 30;
+  transition: opacity 0.5s ease;
+}
+
+/* hints drag */
+.hints-row {
+  position: absolute; left: 14px; right: 14px; top: 50%;
+  transform: translateY(-50%);
+  display: flex; justify-content: space-between;
+  pointer-events: none; z-index: 15; padding: 0 12px;
+}
+.hint-side { display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0; transition: opacity 0.1s, transform 0.1s; }
+.hs-icon   { font-size: 36px; }
+.hs-label  { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+#h-min .hs-label { color: #4ade80; }
+#h-maj .hs-label { color: #f87171; }
+
+/* loading / empty */
+#loading {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  border-radius: 22px; background: #1a1a1a; z-index: 50;
+}
+.spinner { width: 36px; height: 36px; border: 2.5px solid rgba(255,255,255,0.08); border-top-color: rgba(255,255,255,0.4); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading span { font-size: 13px; color: rgba(255,255,255,0.4); }
+#empty-msg {
+  position: absolute; inset: 0; display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  border-radius: 22px; background: #1a1a1a;
+  text-align: center; padding: 28px; z-index: 50;
+}
+#empty-msg .e-icon { font-size: 48px; }
+#empty-msg .e-title { font-size: 20px; font-weight: 800; }
+#empty-msg .e-sub { font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+
+/* ── BOTTOM ── */
+.bottom-area {
+  flex-shrink: 0; width: 100%; max-width: 780px;
+  padding: 10px 20px 20px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 12px;
+}
+
+/* bouton supprimer */
+#btn-delete {
+  padding: 12px 36px;
+  background: rgba(239,68,68,0.12);
+  border: 1.5px solid rgba(239,68,68,0.3);
+  color: #f87171; border-radius: 999px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: background 0.15s, transform 0.1s;
+}
+#btn-delete:hover  { background: rgba(239,68,68,0.22); }
+#btn-delete:active { transform: scale(0.96); }
+
+/* legend */
+.legend {
+  display: flex; gap: 20px; align-items: center;
+  font-size: 11px; color: rgba(255,255,255,0.3);
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+}
+.leg { display: flex; align-items: center; gap: 5px; }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* page shake */
+@keyframes shake {
+  0%,100% { transform:translateX(0) }
+  20%      { transform:translateX(-10px) }
+  40%      { transform:translateX(10px) }
+  60%      { transform:translateX(-8px) }
+  80%      { transform:translateX(6px) }
+}
+body.shake { animation: shake 0.4s ease both; }
+
+/* toast */
+#toast {
+  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+  background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 10px 22px;
+  font-size: 13px; font-weight: 600; color: #fff;
+  opacity: 0; pointer-events: none; z-index: 200;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-title">🔐 Admin Panel</div>
+  <div class="login-sub">Accès restreint — entre ton mot de passe</div>
+  <input id="pwd-input" type="password" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')login()"/>
+  <button id="login-btn" onclick="login()">Entrer</button>
+  <div class="login-err" id="login-err">❌ Mot de passe incorrect</div>
+</div>
+
+<!-- MAIN ADMIN -->
+<div id="main" style="display:none;flex-direction:column;align-items:center;width:100%;height:100%;">
+
+  <div class="top-bar" style="gap:10px;">
+    <div class="logo">Admin — Tri photos</div>
+    <div class="counter-pill">
+      Restantes&nbsp;<b id="count-rest">—</b>&nbsp;/&nbsp;<b id="count-total">—</b>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+    <button id="btn-mode-tri" onclick="setMode('tri')" style="padding:5px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Tri photos</button>
+    <button id="btn-mode-devine" onclick="setMode('devine')" style="padding:5px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;cursor:pointer;">Devine</button>
+  </div>
+  <button id="btn-undo" onclick="undo()" disabled>↩ Annuler</button>
+  </div>
+
+  <div class="card-scene">
+    <div class="ghost-card"></div>
+    <div class="ghost-card"></div>
+
+    <div class="hints-row">
+      <div class="hint-side" id="h-min"><div class="hs-icon">👈</div><div class="hs-label">Mineur</div></div>
+      <div class="hint-side" id="h-maj"><div class="hs-icon">👉</div><div class="hs-label">Pas mineur</div></div>
+    </div>
+
+    <div id="card">
+      <div id="loading"><div class="spinner"></div><span>Chargement…</span></div>
+      <div id="empty-msg" style="display:none;">
+        <div class="e-icon">✅</div>
+        <div class="e-title">Tout trié !</div>
+        <div class="e-sub">Plus aucune photo dans le dossier <code>a-trier/</code>.<br>Ajoutes-en pour continuer.</div>
+      </div>
+      <div class="card-grad"></div>
+      <div class="swipe-ov" id="ov-min"><div class="ov-stamp">← Mineur</div></div>
+      <div class="swipe-ov" id="ov-maj"><div class="ov-stamp">Pas mineur →</div></div>
+      <div id="flash"></div>
+    </div>
+  </div>
+
+  <div class="bottom-area">
+    <button id="btn-delete" onclick="doAction('supprimer')">🗑 Supprimer</button>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:#4ade80"></div>← Mineur</div>
+      <div class="leg"><div class="leg-dot" style="background:#f87171"></div>Pas mineur →</div>
+      <div class="leg"><div class="leg-dot" style="background:#666"></div>↓ Supprimer</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DEVINE ADMIN SECTION -->
+<div id="devine-admin" style="display:none;flex-direction:column;align-items:center;width:100%;max-width:780px;padding:0 20px 40px;">
+  <div style="font-size:20px;font-weight:800;color:#fff;margin:16px 0 6px;">Attribuer un âge aux photos</div>
+  <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:24px;">Photos dans <code>photos/devine-tri/</code> — glissez le curseur puis validez.</div>
+  <div id="devine-admin-content" style="width:100%;max-width:480px;">
+    <div id="devine-admin-loading" style="text-align:center;color:rgba(255,255,255,0.4);padding:40px;">Chargement…</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let TOKEN     = ''
+let photos    = []    // liste fichiers à trier
+let idx       = 0
+let answered  = false
+let dragging  = false
+let startX    = 0
+let curDx     = 0
+let canUndo   = false
+
+const card  = document.getElementById('card')
+const ovMin = document.getElementById('ov-min')
+const ovMaj = document.getElementById('ov-maj')
+const flash = document.getElementById('flash')
+const hMin  = document.getElementById('h-min')
+const hMaj  = document.getElementById('h-maj')
+
+/* ── LOGIN ── */
+async function login() {
+  const pwd = document.getElementById('pwd-input').value.trim()
+  const res = await fetch('/api/admin/atrier', { headers: { 'x-admin-token': pwd } })
+  if (res.status === 401) {
+    document.getElementById('login-err').style.display = 'block'
+    return
+  }
+  TOKEN = pwd
+  document.getElementById('login-screen').classList.add('hidden')
+  document.getElementById('main').style.display = 'flex'
+  const data = await res.json()
+  photos = data
+  showCard()
+  updateCounter()
+}
+
+/* ── COUNTER ── */
+function updateCounter() {
+  const rest = photos.length - idx
+  document.getElementById('count-rest').textContent  = rest < 0 ? 0 : rest
+  document.getElementById('count-total').textContent = photos.length
+}
+
+/* ── SHOW CARD ── */
+function showCard() {
+  document.getElementById('loading').style.display = 'none'
+
+  if (idx >= photos.length) {
+    const ec = document.getElementById('empty-msg')
+    ec.style.display = 'flex'
+    let img = card.querySelector('img')
+    if (img) img.remove()
+    document.getElementById('btn-undo').disabled = !canUndo
+    return
+  }
+
+  document.getElementById('empty-msg').style.display = 'none'
+  answered = false
+  const item = photos[idx]
+  let img = card.querySelector('img')
+  if (!img) {
+    img = document.createElement('img')
+    img.alt = ''
+    card.insertBefore(img, card.querySelector('.card-grad'))
+  }
+  img.src = item.src
+  card.style.transition = 'none'
+  card.style.transform  = ''
+  card.style.opacity    = '1'
+  ovMin.style.opacity = 0; ovMaj.style.opacity = 0
+  flash.style.opacity = 0
+  hMin.style.opacity  = 0; hMaj.style.opacity  = 0
+  hMin.style.transform = ''; hMaj.style.transform = ''
+  updateCounter()
+}
+
+/* ── ACTION ── */
+async function doAction(action) {
+  if (answered || idx >= photos.length) return
+  answered = true
+
+  const item = photos[idx]
+  ovMin.style.opacity = 0; ovMaj.style.opacity = 0
+
+  // couleur flash
+  let flashColor = 'rgba(255,255,255,0.15)'
+  if (action === 'mineur')     flashColor = 'rgba(74,222,128,0.25)'
+  else if (action === 'majeur')   flashColor = 'rgba(248,113,113,0.25)'
+  else if (action === 'supprimer') flashColor = 'rgba(239,68,68,0.35)'
+
+  flash.style.transition = 'none'
+  flash.style.background = flashColor
+  flash.style.opacity    = '1'
+  setTimeout(() => {
+    flash.style.transition = 'opacity 0.5s ease'
+    flash.style.opacity    = '0'
+  }, 120)
+
+  // animation sortie
+  let tx = 0, rot = 0
+  if (action === 'mineur')     { tx = -660; rot = -22 }
+  else if (action === 'majeur')   { tx =  660; rot =  22 }
+  else if (action === 'supprimer') { tx = 0; rot = 0 }  // tombe vers le bas
+
+  if (action === 'supprimer') {
+    card.style.transition = 'transform 0.35s ease, opacity 0.35s'
+    card.style.transform  = 'translateY(120%) scale(0.85)'
+    card.style.opacity    = '0'
+  } else {
+    card.style.transition = 'transform 0.4s cubic-bezier(.4,0,.2,1), opacity 0.4s'
+    card.style.transform  = `translateX(${tx}px) rotate(${rot}deg)`
+    card.style.opacity    = '0'
+  }
+
+  // appel API
+  try {
+    await fetch('/api/admin/trier', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': TOKEN },
+      body: JSON.stringify({ filename: item.filename, action })
+    })
+    canUndo = true
+    document.getElementById('btn-undo').disabled = false
+    showToast(action === 'mineur' ? '✅ Déplacé → mineur/' : action === 'majeur' ? '✅ Déplacé → majeur/' : '🗑 Supprimé')
+  } catch(e) {
+    showToast('❌ Erreur réseau')
+  }
+
+  setTimeout(() => { idx++; showCard() }, 420)
+}
+
+/* ── UNDO ── */
+async function undo() {
+  try {
+    const res = await fetch('/api/admin/undo', {
+      method: 'POST',
+      headers: { 'x-admin-token': TOKEN }
+    })
+    if (!res.ok) { showToast('Rien à annuler'); return }
+    const data = await res.json()
+    // recharger la liste
+    const r2 = await fetch('/api/admin/atrier', { headers: { 'x-admin-token': TOKEN } })
+    photos = await r2.json()
+    idx = Math.max(0, idx - 1)
+    showToast('↩ Annulé — ' + data.restored)
+    showCard()
+  } catch(e) {
+    showToast('❌ Erreur')
+  }
+}
+
+/* ── DRAG ── */
+function startDrag(x) {
+  if (answered || !photos.length || idx >= photos.length) return
+  dragging = true; startX = x; curDx = 0
+  card.style.transition = 'none'
+}
+function moveDrag(x) {
+  if (!dragging) return
+  curDx = x - startX
+  card.style.transform = `translateX(${curDx}px) rotate(${curDx * 0.05}deg)`
+  const t = 50
+  if (curDx < -t) {
+    const f = Math.min(1, (-curDx - t) / 80)
+    ovMin.style.opacity = f; ovMaj.style.opacity = 0
+    hMin.style.opacity  = f; hMin.style.transform = `scale(${1 + f * 0.1})`
+    hMaj.style.opacity  = 0
+  } else if (curDx > t) {
+    const f = Math.min(1, (curDx - t) / 80)
+    ovMaj.style.opacity = f; ovMin.style.opacity = 0
+    hMaj.style.opacity  = f; hMaj.style.transform = `scale(${1 + f * 0.1})`
+    hMin.style.opacity  = 0
+  } else {
+    ovMin.style.opacity = 0; ovMaj.style.opacity = 0
+    hMin.style.opacity  = 0; hMaj.style.opacity  = 0
+  }
+}
+function endDrag() {
+  if (!dragging) return
+  dragging = false
+  if (curDx < -90)     doAction('mineur')
+  else if (curDx > 90) doAction('majeur')
+  else {
+    card.style.transition = 'transform 0.28s cubic-bezier(.4,0,.2,1)'
+    card.style.transform  = ''
+    ovMin.style.opacity = 0; ovMaj.style.opacity = 0
+    hMin.style.opacity  = 0; hMaj.style.opacity  = 0
+  }
+  curDx = 0
+}
+
+card.addEventListener('mousedown',     e => { startDrag(e.clientX); e.preventDefault() })
+document.addEventListener('mousemove', e => moveDrag(e.clientX))
+document.addEventListener('mouseup',   endDrag)
+card.addEventListener('touchstart',    e => startDrag(e.touches[0].clientX), { passive: true })
+document.addEventListener('touchmove', e => moveDrag(e.touches[0].clientX), { passive: true })
+document.addEventListener('touchend',  endDrag)
+
+/* ── KEYBOARD SHORTCUTS ── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft')  doAction('mineur')
+  if (e.key === 'ArrowRight') doAction('majeur')
+  if (e.key === 'ArrowDown' || e.key === 'Delete') doAction('supprimer')
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') undo()
+})
+
+/* ── TOAST ── */
+function showToast(msg) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  setTimeout(() => t.classList.remove('show'), 2000)
+}
+
+
+/* ── MODE ADMIN ── */
+let currentMode = 'tri'
+function setMode(mode) {
+  currentMode = mode
+  document.getElementById('main').style.display      = mode==='tri' ? 'flex' : 'none'
+  document.getElementById('devine-admin').style.display = mode==='devine' ? 'flex' : 'none'
+  document.getElementById('btn-mode-tri').style.background    = mode==='tri'    ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'
+  document.getElementById('btn-mode-tri').style.color         = mode==='tri'    ? '#fff' : 'rgba(255,255,255,0.5)'
+  document.getElementById('btn-mode-devine').style.background = mode==='devine' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'
+  document.getElementById('btn-mode-devine').style.color      = mode==='devine' ? '#fff' : 'rgba(255,255,255,0.5)'
+  if(mode==='devine') loadDevineAdmin()
+}
+
+let devineTri = [], devineTriIdx = 0
+async function loadDevineAdmin() {
+  const el = document.getElementById('devine-admin-loading')
+  if(el) el.style.display='block'
+  const res  = await fetch('/api/admin/devine-tri', { headers:{'x-admin-token':TOKEN} })
+  devineTri  = await res.json()
+  devineTriIdx = 0
+  renderDevineAdmin()
+}
+
+function renderDevineAdmin() {
+  const cont = document.getElementById('devine-admin-content')
+  if (!devineTri.length) {
+    cont.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:40px;">Aucune photo dans devine-tri/</div>'
+    return
+  }
+  if (devineTriIdx >= devineTri.length) {
+    cont.innerHTML = '<div style="text-align:center;color:#22c55e;padding:40px;font-size:20px;font-weight:800;">Tout trie !</div>'
+    return
+  }
+  const item = devineTri[devineTriIdx]
+  const age  = item.age || 25
+
+  const imgDiv    = document.createElement('div')
+  imgDiv.style.cssText = 'border-radius:20px;overflow:hidden;margin-bottom:16px;height:calc(100vh - 320px);min-height:380px;max-height:660px;'
+  const img = document.createElement('img')
+  img.src   = item.src
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:center top;'
+  imgDiv.appendChild(img)
+
+  const infoDiv = document.createElement('div')
+  infoDiv.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:4px;text-align:center;'
+  infoDiv.textContent = (devineTriIdx+1) + ' / ' + devineTri.length + ' — ' + item.filename
+
+  const ageDisplay = document.createElement('div')
+  ageDisplay.id = 'da-age-display'
+  ageDisplay.style.cssText = 'font-size:60px;font-weight:900;text-align:center;color:#fff;line-height:1;margin:8px 0;'
+  ageDisplay.textContent = age + ' ans'
+
+  const slider = document.createElement('input')
+  slider.type  = 'range'; slider.min = '11'; slider.max = '60'; slider.value = age; slider.id = 'da-slider'
+  slider.style.cssText = 'width:100%;-webkit-appearance:none;height:6px;border-radius:99px;background:#cd130a;outline:none;cursor:pointer;margin-bottom:20px;'
+  slider.addEventListener('input', function() { ageDisplay.textContent = this.value + ' ans' })
+
+  const btnRow = document.createElement('div')
+  btnRow.style.cssText = 'display:flex;gap:10px;'
+  const btnOk = document.createElement('button')
+  btnOk.textContent = 'Valider et suivant'
+  btnOk.style.cssText = 'flex:1;padding:14px;background:#cd130a;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;'
+  btnOk.onclick = saveDevineAge
+  const btnSkip = document.createElement('button')
+  btnSkip.textContent = 'Passer'
+  btnSkip.style.cssText = 'padding:14px 20px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;'
+  btnSkip.onclick = skipDevine
+  btnRow.appendChild(btnOk); btnRow.appendChild(btnSkip)
+
+  cont.innerHTML = ''
+  cont.appendChild(imgDiv); cont.appendChild(infoDiv); cont.appendChild(ageDisplay)
+  cont.appendChild(slider); cont.appendChild(btnRow)
+}
+
+
+async function saveDevineAge() {
+  const slider = document.getElementById('da-slider')
+  const item   = devineTri[devineTriIdx]
+  await fetch('/api/admin/devine-save', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-admin-token':TOKEN},
+    body:JSON.stringify({ filename:item.filename, age:parseInt(slider.value) })
+  })
+  showToast('✅ Sauvegardé — '+item.filename+' = '+slider.value+' ans')
+  devineTriIdx++
+  renderDevineAdmin()
+}
+
+function skipDevine() { devineTriIdx++; renderDevineAdmin() }
+
+</script>
+</body>
+</html>

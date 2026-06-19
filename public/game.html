@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Game — Test de Pédophilité</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  --bg: #0f0f0f; --bg2: #1a1a1a; --surface: #242424;
+  --border: rgba(255,255,255,0.08); --text: #fff;
+  --text2: rgba(255,255,255,0.5); --text3: rgba(255,255,255,0.22);
+  --pill-bg: rgba(255,255,255,0.06); --brand: #cd130a;
+}
+body.light {
+  --bg: #f0eeee; --bg2: #fff; --surface: #e3e0e0;
+  --border: rgba(0,0,0,0.08); --text: #1b1817;
+  --text2: rgba(0,0,0,0.45); --text3: rgba(0,0,0,0.22);
+  --pill-bg: rgba(0,0,0,0.05);
+}
+
+html, body { height: 100%; overflow: hidden; }
+body { height: 100%; display: flex; flex-direction: column; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+/* les screens scrollables ont leur propre overflow */
+.screen { overflow-y: auto; overflow-x: hidden; }
+#screen-sortir { overflow: hidden; }
+
+.top-bar {
+  width: 100%; max-width: 780px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px 8px; flex-shrink: 0;
+  position: sticky; top: 0; background: var(--bg); z-index: 100;
+}
+.logo { font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text3); }
+.nav-pills { display: flex; gap: 6px; }
+.nav-pill {
+  padding: 5px 14px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--pill-bg);
+  color: var(--text2); font-size: 12px; font-weight: 700; cursor: pointer;
+  letter-spacing: 0.04em; transition: all 0.15s; text-decoration: none;
+}
+.nav-pill:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.nav-pill.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+.theme-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--pill-bg);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: transform 0.1s;
+}
+.theme-btn:active { transform: scale(0.9); }
+
+.screen { display: none; width: 100%; max-width: 780px; padding: 20px 20px 40px; animation: fadeUp 0.3s ease; }
+.screen.active { display: block; }
+#screen-sortir.active { display: flex; flex-direction: column; padding: 8px 14px 6px; overflow: hidden; height: 100%; }
+#screen-devine.active { display: flex; flex-direction: column; padding: 8px 14px 6px; overflow: hidden; height: 100%; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+/* ── MENU ── */
+.game-title { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+.game-sub { font-size: 14px; color: var(--text2); margin-bottom: 28px; }
+.rubrique-grid { display: flex; flex-direction: column; gap: 12px; }
+.rubrique-card {
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 22px 24px;
+  display: flex; align-items: center; gap: 18px;
+  cursor: pointer; transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+}
+.rubrique-card:hover { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(205,19,10,0.12); transform: translateY(-1px); }
+.rubrique-card:active { transform: scale(0.98); }
+.rubrique-icon { font-size: 36px; line-height: 1; flex-shrink: 0; }
+.rubrique-info { flex: 1; }
+.rubrique-name { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+.rubrique-desc { font-size: 13px; color: var(--text2); line-height: 1.4; }
+.rubrique-arrow { font-size: 20px; color: var(--text3); flex-shrink: 0; }
+.rubrique-badge {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; padding: 2px 8px; border-radius: 999px;
+  background: rgba(205,19,10,0.12); color: var(--brand);
+  border: 1px solid rgba(205,19,10,0.2); margin-top: 6px; display: inline-block;
+}
+.soon { opacity: 0.45; cursor: not-allowed; }
+.soon:hover { border-color: var(--border); box-shadow: none; transform: none; }
+
+/* ── QUESTIONNAIRE ── */
+.q-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text2); cursor: pointer;
+  background: none; border: none; padding: 0;
+  margin-bottom: 16px; transition: color 0.15s;
+}
+.q-back:hover { color: var(--text); }
+.q-title { font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+.q-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+.q-progress { margin-bottom: 24px; }
+.q-prog-bar { height: 4px; background: var(--surface); border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+.q-prog-fill { height: 100%; background: var(--brand); border-radius: 99px; transition: width 0.4s ease; }
+.q-prog-label { font-size: 11px; color: var(--text3); }
+
+.q-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px 24px;
+  margin-bottom: 20px; min-height: 140px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.q-num { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--brand); margin-bottom: 12px; }
+.q-text { font-size: 18px; font-weight: 700; line-height: 1.4; color: var(--text); }
+
+.q-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.q-opt {
+  padding: 14px 20px; border-radius: 14px;
+  border: 1.5px solid var(--border); background: var(--bg2);
+  font-size: 15px; font-weight: 600; color: var(--text);
+  cursor: pointer; transition: all 0.15s; text-align: left;
+  display: flex; align-items: center; gap: 12px;
+}
+.q-opt:hover { border-color: var(--brand); background: rgba(205,19,10,0.06); }
+.q-opt.selected { border-color: var(--brand); background: rgba(205,19,10,0.1); color: var(--brand); }
+.q-opt.selected::before { content: '✓'; font-weight: 900; }
+.q-opt:not(.selected)::before { content: '○'; color: var(--text3); }
+
+/* checklist — texte blanc forcé */
+.q-checklist { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.q-check {
+  padding: 10px 18px; border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+body.light .q-check {
+  border-color: rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.05);
+  color: #1b1817;
+}
+.q-check:hover { border-color: var(--brand); }
+.q-check.selected {
+  border-color: var(--brand);
+  background: rgba(205,19,10,0.18);
+  color: #fff;
+}
+body.light .q-check.selected { color: var(--brand); }
+
+.q-nav { display: flex; gap: 10px; }
+.q-btn-next {
+  flex: 1; padding: 14px; background: var(--brand); color: #fff;
+  border: none; border-radius: 14px; font-size: 15px; font-weight: 800;
+  cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+}
+.q-btn-next:hover { opacity: 0.88; }
+.q-btn-next:active { transform: scale(0.97); }
+.q-btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── RÉSULTATS ── */
+.result-profile {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 24px; padding: 32px 28px;
+  text-align: center; margin-bottom: 20px;
+}
+.result-icon { font-size: 72px; line-height: 1; margin-bottom: 12px; }
+.result-name { font-size: 26px; font-weight: 900; margin-bottom: 8px; }
+.result-score-bar { display: flex; align-items: center; gap: 10px; margin: 16px 0; }
+.rsb-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); white-space: nowrap; }
+.rsb-bar { flex: 1; height: 8px; background: var(--surface); border-radius: 99px; overflow: hidden; }
+.rsb-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+.result-desc { font-size: 14px; color: var(--text2); line-height: 1.6; }
+.result-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+.rs { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 14px 10px; text-align: center; }
+.rs .v { font-size: 24px; font-weight: 800; }
+.rs .l { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+.result-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.btn-secondary {
+  padding: 12px 24px; background: var(--bg2); color: var(--text2);
+  border: 1px solid var(--border); border-radius: 999px;
+  font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+}
+.btn-secondary:hover { color: var(--text); background: var(--surface); }
+.btn-primary {
+  padding: 12px 28px; background: var(--brand); color: #fff;
+  border: none; border-radius: 999px;
+  font-size: 14px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(205,19,10,0.3); transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.88; }
+
+/* ── ÉCRAN CHOIX ÂGE ── */
+.age-screen {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 60vh; gap: 24px; text-align: center;
+}
+.age-title { font-size: 24px; font-weight: 900; }
+.age-sub { font-size: 14px; color: var(--text2); }
+.age-btns { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.age-btn {
+  padding: 20px 36px; border-radius: 20px;
+  border: 1.5px solid var(--border); background: var(--bg2);
+  font-size: 16px; font-weight: 800; cursor: pointer;
+  transition: all 0.15s; display: flex; flex-direction: column;
+  align-items: center; gap: 8px; min-width: 140px;
+}
+.age-btn:hover { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(205,19,10,0.12); transform: translateY(-2px); }
+.age-btn .ab-icon { font-size: 40px; }
+.age-btn .ab-label { font-size: 14px; color: var(--text2); font-weight: 600; }
+
+/* ══ DEVINE FEEDBACK ══ */
+#devine-feedback {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+  transition: opacity 0.15s;
+}
+.df-arrow {
+  font-size: 72px;
+  line-height: 1;
+  animation: df-bounce 0.4s ease;
+}
+.df-label {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.df-diff {
+  font-size: 16px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+@keyframes df-bounce {
+  0%   { transform: translateY(0); }
+  30%  { transform: translateY(-18px); }
+  60%  { transform: translateY(8px); }
+  100% { transform: translateY(0); }
+}
+@keyframes shake-devine {
+  0%,100% { transform: translateX(0); }
+  15%     { transform: translateX(-12px); }
+  30%     { transform: translateX(12px); }
+  45%     { transform: translateX(-8px); }
+  60%     { transform: translateX(8px); }
+  75%     { transform: translateX(-4px); }
+  90%     { transform: translateX(4px); }
+}
+.shake-devine { animation: shake-devine 0.5s ease both; }
+
+/* ══ SORTIR AVEC / DEVINE ══ */
+.swipe-scene {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  overflow: visible;
+}
+.swipe-scene .ghost-s {
+  position: absolute; border-radius: 20px;
+  background: var(--bg2); border: 1px solid var(--border);
+  pointer-events: none; inset: 0;
+}
+.ghost-s:nth-child(1) { transform: scale(0.95) translateY(10px); opacity: 0.5; z-index:1; }
+.ghost-s:nth-child(2) { transform: scale(0.90) translateY(20px); opacity: 0.28; z-index:0; }
+.swipe-card-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden; z-index: 10; cursor: grab;
+  transform-origin: center 110%;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  will-change: transform;
+  flex: 1;
+}
+.swipe-card-wrap:active { cursor: grabbing; }
+.swipe-card-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+  border-radius: 20px; pointer-events: none;
+  display: block;
+}
+.swipe-grad { position:absolute; bottom:0; left:0; right:0; height:45%; background:linear-gradient(to top,rgba(0,0,0,0.8),transparent); border-radius:0 0 20px 20px; z-index:2; }
+.swipe-ov-s {
+  position:absolute; inset:0; border-radius:20px;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; z-index:20; pointer-events:none;
+}
+.swipe-ov-s .stamp-s {
+  font-size:26px; font-weight:900; letter-spacing:0.1em; text-transform:uppercase;
+  padding:8px 24px; border-radius:10px; border:4px solid;
+}
+#ov-oui  { background:rgba(34,197,94,0.15); }
+#ov-non  { background:rgba(239,68,68,0.15); }
+#ov-oui  .stamp-s { color:#22c55e; border-color:#22c55e; transform:rotate(-8deg); }
+#ov-non  .stamp-s { color:#ef4444; border-color:#ef4444; transform:rotate(8deg); }
+
+.swipe-labels {
+  display:flex; justify-content:space-between;
+  margin-bottom:12px; padding:0 8px;
+}
+.swipe-lbl { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); }
+.swipe-lbl.yes { color:#22c55e; }
+.swipe-lbl.no  { color:#ef4444; }
+
+.swipe-prog { font-size:12px; color:var(--text3); text-align:center; margin-top:8px; }
+
+/* devine */
+.devine-scene {
+  width:100%; max-width:720px;
+  margin:0 auto 0;
+  display:flex; flex-direction:column;
+  flex:1; min-height:0;
+}
+.devine-img-wrap {
+  width:100%;
+  flex:1; min-height:0;
+  border-radius:20px; overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,0.4);
+  margin-bottom:14px;
+}
+.devine-img-wrap img {
+  width:100%; height:100%;
+  object-fit:cover; object-position:center top;
+}
+.devine-slider-wrap { padding:0 4px; }
+.devine-slider-label {
+  display:flex; justify-content:space-between;
+  font-size:13px; color:var(--text2); margin-bottom:8px;
+}
+.devine-age-display {
+  font-size:56px; font-weight:900; text-align:center;
+  margin-bottom:8px; color:var(--text);
+  line-height:1;
+}
+.devine-age-display span { font-size:18px; font-weight:600; color:var(--text2); }
+input[type=range].age-slider {
+  width:100%; -webkit-appearance:none; appearance:none;
+  height:6px; border-radius:99px;
+  background: linear-gradient(to right, var(--brand) 0%, var(--brand) var(--pct, 0%), var(--surface) var(--pct, 0%));
+  outline:none; cursor:pointer; margin-bottom:16px;
+}
+input[type=range].age-slider::-webkit-slider-thumb {
+  -webkit-appearance:none; width:24px; height:24px;
+  border-radius:50%; background:#fff; border:3px solid var(--brand);
+  cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+}
+.btn-devine-valid {
+  width:100%; padding:14px; background:var(--brand); color:#fff;
+  border:none; border-radius:14px; font-size:15px; font-weight:800;
+  cursor:pointer; transition:opacity 0.15s;
+}
+.btn-devine-valid:hover { opacity:0.88; }
+
+/* résultats sortir/devine */
+.score-big { font-size:72px; font-weight:900; line-height:1; text-align:center; margin-bottom:8px; }
+.score-label { font-size:15px; color:var(--text2); text-align:center; margin-bottom:24px; }
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.stat-box { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:14px 10px; text-align:center; }
+.stat-box .sv { font-size:28px; font-weight:800; }
+.stat-box .sl { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:0.08em; margin-top:3px; }
+.detraque-bar { margin:16px 0; }
+.detraque-label { display:flex; justify-content:space-between; font-size:12px; color:var(--text2); margin-bottom:6px; }
+.detraque-track { height:10px; background:var(--surface); border-radius:99px; overflow:hidden; }
+.detraque-fill  { height:100%; border-radius:99px; background:linear-gradient(to right,#22c55e,#f59e0b,#ef4444); transition:width 1s ease; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">Test de Pédophilité</div>
+  <div class="nav-pills">
+    <a class="nav-pill" href="/">Accueil</a>
+    <a class="nav-pill active" href="/game">Game</a>
+  </div>
+  <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
+</div>
+
+<!-- MENU -->
+<div class="screen active" id="screen-menu">
+  <div class="game-title">🎮 Game</div>
+  <div class="game-sub">Choisis une rubrique pour commencer</div>
+  <div class="rubrique-grid">
+    <div class="rubrique-card" onclick="startQuestionnaire()">
+      <div class="rubrique-icon">🧠</div>
+      <div class="rubrique-info">
+        <div class="rubrique-name">Questionnaire</div>
+        <div class="rubrique-desc">Répondez honnêtement à une série de questions. Votre profil sera révélé à la fin.</div>
+        <div class="rubrique-badge">~5 min · Profil psychologique</div>
+      </div>
+      <div class="rubrique-arrow">›</div>
+    </div>
+    <div class="rubrique-card" onclick="startSortir()">
+      <div class="rubrique-icon">💘</div>
+      <div class="rubrique-info">
+        <div class="rubrique-name">Pourrais-tu sortir avec ?</div>
+        <div class="rubrique-desc">Swipe ← si tu pourrais, → si non. 30 profils. Score détraqué à la fin.</div>
+        <div class="rubrique-badge">30 photos · Score détraqué</div>
+      </div>
+      <div class="rubrique-arrow">›</div>
+    </div>
+    <div class="rubrique-card" onclick="startDevine()">
+      <div class="rubrique-icon">🔍</div>
+      <div class="rubrique-info">
+        <div class="rubrique-name">Devine l'âge</div>
+        <div class="rubrique-desc">Estime l'âge de chaque personne avec un curseur. Vois si tu es un détraqué.</div>
+        <div class="rubrique-badge">30 photos · Curseur 11-60 ans</div>
+      </div>
+      <div class="rubrique-arrow">›</div>
+    </div>
+    <div class="rubrique-card" onclick="window.location='/multi'">
+      <div class="rubrique-icon">🎮</div>
+      <div class="rubrique-info">
+        <div class="rubrique-name">Multijoueur</div>
+        <div class="rubrique-desc">Jouez à deux en temps réel. Même photos, timer 20s, comparaison des réponses.</div>
+        <div class="rubrique-badge">2 joueurs · Temps réel</div>
+      </div>
+      <div class="rubrique-arrow">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHOIX ÂGE -->
+<div class="screen" id="screen-age">
+  <div class="age-screen">
+    <div class="age-title">Êtes-vous mineur(e) ?</div>
+    <div class="age-sub">Votre réponse adapte les questions à votre situation</div>
+    <div class="age-btns">
+      <button class="age-btn" onclick="chooseAge('mineur')">
+        <div class="ab-icon">🧒</div>
+        <div>Oui, je suis mineur(e)</div>
+        <div class="ab-label">Moins de 18 ans</div>
+      </button>
+      <button class="age-btn" onclick="chooseAge('majeur')">
+        <div class="ab-icon">🧑</div>
+        <div>Non, je suis majeur(e)</div>
+        <div class="ab-label">18 ans ou plus</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- QUESTIONNAIRE -->
+<div class="screen" id="screen-questionnaire">
+  <button class="q-back" onclick="goMenu()">← Retour</button>
+  <div class="q-title">🧠 Questionnaire</div>
+  <div class="q-sub">Répondez honnêtement. Vos réponses restent privées.</div>
+  <div class="q-progress">
+    <div class="q-prog-bar"><div class="q-prog-fill" id="q-prog-fill" style="width:0%"></div></div>
+    <div class="q-prog-label" id="q-prog-label">Question 1 / —</div>
+  </div>
+  <div class="q-card">
+    <div class="q-num" id="q-num">Question 1</div>
+    <div class="q-text" id="q-text">Chargement…</div>
+  </div>
+  <div id="q-options-wrap"></div>
+  <div class="q-nav">
+    <button class="q-btn-next" id="q-btn-next" onclick="nextQ()" disabled>Suivant →</button>
+  </div>
+</div>
+
+<!-- RÉSULTAT -->
+<div class="screen" id="screen-result">
+  <button class="q-back" onclick="goMenu()">← Retour au menu</button>
+  <div class="result-profile">
+    <div class="result-icon" id="r-icon">😇</div>
+    <div class="result-name" id="r-name">Le Transparent</div>
+    <div class="result-score-bar">
+      <div class="rsb-label">Niveau</div>
+      <div class="rsb-bar"><div class="rsb-fill" id="r-bar" style="width:0%"></div></div>
+      <div class="rsb-label" id="r-pct">0%</div>
+    </div>
+    <div class="result-desc" id="r-desc">Description.</div>
+  </div>
+  <div class="result-stats">
+    <div class="rs"><div class="v" id="r-oui" style="color:#ef4444">0</div><div class="l">Oui</div></div>
+    <div class="rs"><div class="v" id="r-sais" style="color:#f59e0b">0</div><div class="l">Je sais pas</div></div>
+    <div class="rs"><div class="v" id="r-non" style="color:#22c55e">0</div><div class="l">Non</div></div>
+  </div>
+  <div class="result-btns">
+    <button class="btn-secondary" onclick="restartQ()">↩ Recommencer</button>
+    <button class="btn-primary" onclick="window.location='/'">Jouer au jeu →</button>
+  </div>
+</div>
+
+<script>
+let isDark = true
+function toggleTheme() {
+  isDark = !isDark
+  document.body.classList.toggle('light', !isDark)
+  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️'
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+  window.scrollTo(0,0)
+}
+function goMenu() { showScreen('screen-menu') }
+
+/* ══ QUESTIONS MAJEUR ══ */
+const Q_MAJEUR = [
+  { id:1,  text:"Avez-vous déjà eu des envies sexuelles concernant une personne plus jeune que vous ?", type:'yn3', score:2 },
+  { id:2,  text:"Plus de 5 ans d'écart ?", type:'yn3', score:3, cond:1 },
+  { id:3,  text:"Plus de 10 ans d'écart ?", type:'yn3', score:5, cond:2 },
+  { id:4,  text:"Avez-vous déjà eu des relations sexuelles avec un membre de votre famille ?", type:'yn3', score:8 },
+  { id:5,  text:"Était-il ou était-elle plus jeune que vous ?", type:'yn3', score:6, cond:4 },
+  { id:6,  text:"Avez-vous déjà eu des pensées intrusives concernant un membre de votre famille ?", type:'yn3', score:3 },
+  { id:7,  text:"Avez-vous déjà touché une partie intime d'un membre de votre famille ?", type:'yn3', score:8 },
+  { id:8,  text:"Laquelle ?", type:'check', cond:7, score:1, options:["Poitrine","Fesses","Pieds","Ventre","Cuisses","Oreilles","Parties intimes"] },
+  { id:9,  text:"Vous êtes-vous déjà masturbé(e) avec un(e) ami(e) dans la même pièce en regardant un porno ou hentai ?", type:'yn3', score:2 },
+  { id:10, text:"Considérez-vous avoir déjà fait des choses malsaines lorsque vous étiez enfant ?", type:'yn3', score:2 },
+  { id:11, text:"Êtes-vous sûr(e) de votre réponse ?", type:'yn3', score:1, condNon:10 },
+  { id:12, text:"Avez-vous déjà eu des comportements sexuels avec une autre personne lorsque vous étiez enfant ?", type:'yn3', score:4, cond:10 },
+  { id:13, text:"Avez-vous déjà regardé un contenu pornographique avant l'âge de 11 ans ?", type:'yn3', score:2 },
+  { id:14, text:"Avez-vous déjà eu des pensées que vous considérez comme malsaines envers votre mère et/ou votre père ?", type:'yn3', score:3 },
+  { id:15, text:"Avez-vous déjà eu du mal à séduire des personnes de votre âge ou plus âgées que vous ?", type:'yn3', score:1 },
+  { id:16, text:"Avez-vous du mal à être excité(e) par des personnes de votre âge ou plus âgées que vous ?", type:'yn3', score:4 },
+  { id:17, text:"Avez-vous déjà fait un rêve intime impliquant un membre de votre famille plus jeune que vous ?", type:'yn3', score:5 },
+  { id:19, text:"Avez-vous déjà ressenti un malaise après avoir fait quelque chose que vous considériez comme moralement inacceptable ?", type:'yn3', score:1 },
+  { id:20, text:"Avez-vous déjà reconnu avoir eu des pensées malsaines envers des personnes plus jeunes que vous ?", type:'yn3', score:4 },
+  { id:21, text:"Avez-vous déjà touché intimement un enfant ?", type:'yn3', score:10 },
+  { id:22, text:"Avez-vous déjà attendu près d'une école pour voir passer un(e) adolescent(e) qui vous attirait ?", type:'yn3', score:8 },
+  { id:23, text:"Avez-vous déjà été attiré(e) par un(e) élève de 6ème alors que vous étiez au minimum en 4ème ?", type:'yn3', score:4 },
+  { id:24, text:"Avez-vous plus de facilité à communiquer avec des enfants qu'avec des adultes ?", type:'yn3', score:3 },
+  { id:25, text:"Avez-vous déjà offert ou payé des bonbons/cadeaux à un enfant que vous ne connaissiez pas ?", type:'yn3', score:5 },
+  { id:26, text:"Considérez-vous que la justice concernant les crimes sexuels sur mineurs est mal faite ?", type:'yn3', score:2 },
+  { id:27, text:"Considérez-vous qu'un écart d'âge entre 19 et 16 ans puisse être acceptable dans une relation sexuelle ?", type:'yn3', score:2 },
+  { id:28, text:"Avez-vous déjà menti à quelqu'un sur un de ces sujets ?", type:'yn3', score:3 },
+  { id:29, text:"Avez-vous déjà eu l'impression d'être une mauvaise personne ?", type:'yn3', score:1 },
+  { id:30, text:"Avez-vous déjà ressenti du plaisir à manipuler une situation à votre avantage ?", type:'yn3', score:2 },
+  { id:31, text:"Êtes-vous sur Discord ?", type:'yn3', score:1 },
+  { id:32, text:"Avez-vous déjà discuté en vocal avec des personnes mineures en sachant qu'elles étaient mineures ?", type:'yn3', score:3, cond:31 },
+  { id:33, text:"Avez-vous déjà ajouté des personnes mineures en ami ?", type:'yn3', score:2, cond:31 },
+  { id:34, text:"Avez-vous déjà passé des appels vocaux privés avec l'une de ces personnes mineures ?", type:'yn3', score:3, cond:33 },
+  { id:35, text:"Avez-vous déjà utilisé Omegle, Azar ou une plateforme similaire ?", type:'yn3', score:2 },
+  { id:36, text:"Si une personne mineure apparaît sur une application de rencontre, avez-vous tendance à la skip ?", type:'yn3', score:5 },
+  { id:37, text:"Si un(e) de vos ami(e)s sort avec une personne mineure, cela vous dérange-t-il ?", type:'yn3', score:0 },
+  { id:38, text:"Si une personne mineure vous déclare son amour, accepteriez-vous d'engager une relation avec elle ?", type:'yn3', score:8 },
+  { id:39, text:"Êtes-vous certain(e) de votre réponse ?", type:'yn3', score:3, condNon:38 },
+  { id:40, text:"Si vous recevez des photos intimes d'une personne mineure, les conserveriez-vous ?", type:'yn3', score:10 },
+  { id:41, text:"Avez-vous déjà prétendu être mineur pour plaisanter sur une application ou un site en ligne ?", type:'yn3', score:2 },
+  { id:42, text:"Avez-vous déjà interagi avec des personnes mineures en vous faisant passer pour un(e) mineur(e) ?", type:'yn3', score:6 },
+  { id:43, text:"Êtes-vous certain(e) d'avoir répondu honnêtement à toutes les questions précédentes ?", type:'yn3', score:0 },
+]
+
+/* ══ QUESTIONS MINEUR ══ */
+const Q_MINEUR = [
+  { id:1,  text:"Avez-vous déjà eu des envies sexuelles concernant une personne plus vieille que vous ?", type:'yn3', score:2 },
+  { id:2,  text:"Plus de 5 ans d'écart ?", type:'yn3', score:3, cond:1 },
+  { id:3,  text:"Plus de 10 ans d'écart ?", type:'yn3', score:5, cond:2 },
+  { id:4,  text:"Avez-vous déjà eu des relations sexuelles avec un membre de votre famille ?", type:'yn3', score:8 },
+  { id:5,  text:"Était-il ou était-elle plus vieille que vous ?", type:'yn3', score:6, cond:4 },
+  { id:6,  text:"Avez-vous déjà eu des pensées intrusives concernant un membre de votre famille ?", type:'yn3', score:3 },
+  { id:7,  text:"Avez-vous déjà touché une partie intime d'un membre de votre famille ?", type:'yn3', score:8 },
+  { id:8,  text:"Laquelle ?", type:'check', cond:7, score:1, options:["Poitrine","Fesses","Pieds","Ventre","Cuisses","Oreilles","Parties intimes"] },
+  { id:9,  text:"Vous êtes-vous déjà masturbé(e) avec un(e) ami(e) dans la même pièce en regardant un porno ou hentai ?", type:'yn3', score:2 },
+  { id:10, text:"Considérez-vous avoir déjà fait des choses malsaines ?", type:'yn3', score:2 },
+  { id:11, text:"Êtes-vous sûr(e) de votre réponse ?", type:'yn3', score:1, condNon:10 },
+  { id:12, text:"Avez-vous déjà eu des comportements sexuels avec une personne plus âgée ?", type:'yn3', score:4, cond:10 },
+  { id:13, text:"Avez-vous déjà regardé un contenu pornographique avant l'âge de 11 ans ?", type:'yn3', score:2 },
+  { id:14, text:"Avez-vous déjà eu des pensées que vous considérez comme malsaines envers votre mère et/ou votre père ?", type:'yn3', score:3 },
+  { id:15, text:"Vous êtes-vous déjà fait séduire par des personnes de votre âge ou plus âgées que vous ?", type:'yn3', score:1 },
+  { id:16, text:"Avez-vous du mal à être excité(e) par des personnes de votre âge ou plus jeunes que vous ?", type:'yn3', score:4 },
+  { id:18, text:"Avez-vous déjà fait un rêve intime impliquant un membre de votre famille plus âgé que vous ?", type:'yn3', score:3 },
+  { id:19, text:"Avez-vous déjà ressenti un malaise après avoir fait quelque chose que vous considériez comme moralement inacceptable ?", type:'yn3', score:1 },
+  { id:20, text:"Avez-vous déjà reconnu avoir eu des pensées malsaines envers des personnes plus vieilles que vous ?", type:'yn3', score:4 },
+  { id:21, text:"Avez-vous déjà touché intimement un adulte ?", type:'yn3', score:10 },
+  { id:23, text:"Avez-vous déjà été attiré(e) par un(e) élève de 6ème alors que vous étiez au minimum en 4ème ?", type:'yn3', score:4 },
+  { id:24, text:"Avez-vous plus de facilité à communiquer avec des adultes qu'avec des personnes de votre âge ?", type:'yn3', score:3 },
+  { id:26, text:"Considérez-vous que la justice concernant les crimes sexuels sur mineurs est mal faite ?", type:'yn3', score:2 },
+  { id:27, text:"Considérez-vous qu'un écart d'âge entre 19 et 16 ans puisse être acceptable dans une relation sexuelle ?", type:'yn3', score:2 },
+  { id:28, text:"Avez-vous déjà menti à quelqu'un sur un de ces sujets ?", type:'yn3', score:3 },
+  { id:29, text:"Avez-vous déjà eu l'impression d'être une mauvaise personne ?", type:'yn3', score:1 },
+  { id:30, text:"Avez-vous déjà ressenti du plaisir à manipuler une situation à votre avantage ?", type:'yn3', score:2 },
+  { id:31, text:"Êtes-vous sur Discord ?", type:'yn3', score:1 },
+  { id:32, text:"Avez-vous déjà discuté en vocal avec des personnes majeures en sachant qu'elles étaient majeures ?", type:'yn3', score:3, cond:31 },
+  { id:33, text:"Avez-vous déjà ajouté des personnes majeures en ami ?", type:'yn3', score:2, cond:31 },
+  { id:34, text:"Avez-vous déjà passé des appels vocaux privés avec l'une de ces personnes majeures ?", type:'yn3', score:3, cond:33 },
+  { id:35, text:"Vous a-t-on déjà demandé des nudes ?", type:'yn3', score:2 },
+  { id:351, text:"Avez-vous accepté ?", type:'yn3', score:4, cond:35 },
+  { id:36, text:"Avez-vous déjà utilisé Omegle, Azar ou une plateforme similaire ?", type:'yn3', score:2 },
+  { id:37, text:"Si une personne majeure apparaît sur une application de rencontre, avez-vous tendance à la skip ?", type:'yn3', score:5 },
+  { id:38, text:"Si un(e) de vos ami(e)s sort avec une personne majeure d'un écart de 3 ans, cela vous dérange-t-il ?", type:'yn3', score:0 },
+  { id:39, text:"Si une personne majeure vous déclare son amour, accepteriez-vous d'engager une relation avec elle ?", type:'yn3', score:8 },
+  { id:40, text:"Êtes-vous certain(e) de votre réponse ?", type:'yn3', score:3, condNon:39 },
+  { id:41, text:"Si vous recevez des photos intimes d'une personne majeure, les conserveriez-vous ?", type:'yn3', score:10 },
+  { id:42, text:"Avez-vous déjà prétendu être majeur(e) pour plaisanter sur une application ou un site en ligne ?", type:'yn3', score:2 },
+  { id:43, text:"Avez-vous déjà interagi avec des personnes majeures en vous faisant passer pour un(e) majeur(e) ?", type:'yn3', score:6 },
+  { id:44, text:"Êtes-vous certain(e) d'avoir répondu honnêtement à toutes les questions précédentes ?", type:'yn3', score:0 },
+]
+
+/* ══ PROFILS MAJEUR (est-il pédophile ?) ══ */
+const PROFILES_MAJEUR = [
+  { min:0,   max:5,   name:"😇 Le Transparent",    icon:"😇", color:"#22c55e", desc:"Peu ou aucun comportement problématique déclaré. Vous semblez avoir une vie intérieure saine et des limites claires." },
+  { min:6,   max:12,  name:"👁️ L'Observateur",      icon:"👁️", color:"#84cc16", desc:"Vous regardez beaucoup, agissez peu. Quelques curiosités sans passage à l'acte apparent." },
+  { min:13,  max:20,  name:"🎭 Le Dissimulé",        icon:"🎭", color:"#eab308", desc:"Vous semblez cacher certaines pensées ou intentions. Une part de vous reste dans l'ombre." },
+  { min:21,  max:30,  name:"🕸️ L'Obsessionnel",     icon:"🕸️", color:"#f97316", desc:"Des fixations se développent facilement. Certaines pensées reviennent de manière récurrente." },
+  { min:31,  max:42,  name:"🧠 Le Rationalisateur", icon:"🧠", color:"#ef4444", desc:"Vous trouvez souvent une justification à vos actes ou pensées. Une forme de déni organisé." },
+  { min:43,  max:55,  name:"🚪 Le Frontalier",       icon:"🚪", color:"#dc2626", desc:"Vous aimez tester les limites morales. Les frontières éthiques sont floues pour vous." },
+  { min:56,  max:68,  name:"🎪 Le Manipulateur",     icon:"🎪", color:"#b91c1c", desc:"Vous influencez les situations pour obtenir ce que vous voulez, souvent aux dépens des autres." },
+  { min:69,  max:82,  name:"🐺 Le Prédateur",        icon:"🐺", color:"#991b1b", desc:"Vous ignorez ou niez les limites des autres. Un profil à haut risque comportemental." },
+  { min:83,  max:999, name:"💀 Le Détraqué",         icon:"💀", color:"#7f1d1d", desc:"Niveau maximum de pédophilité du test. Ce profil indique des comportements ou pensées extrêmement préoccupants." },
+]
+
+/* ══ PROFILS MINEUR (a-t-il été exposé/victime ?) ══ */
+const PROFILES_MINEUR = [
+  { min:0,   max:5,   name:"🛡️ Protégé(e)",          icon:"🛡️", color:"#22c55e", desc:"Aucune exposition problématique détectée. Tu sembles avoir grandi dans un environnement sain avec des limites respectées." },
+  { min:6,   max:12,  name:"👀 L'Éveillé(e)",         icon:"👀", color:"#84cc16", desc:"Quelques expériences inhabituelles, mais sans impact apparent. Tu as conscience de certaines choses qui méritent attention." },
+  { min:13,  max:20,  name:"🌫️ Le Confus(e)",         icon:"🌫️", color:"#eab308", desc:"Certaines situations t'ont troublé(e) sans que tu saches forcément les nommer. Des repères semblent flous." },
+  { min:21,  max:30,  name:"⚠️ L'Exposé(e)",          icon:"⚠️", color:"#f97316", desc:"Tu as été exposé(e) à des situations ou comportements qui ne t'étaient pas destinés. C'est important d'en parler à quelqu'un de confiance." },
+  { min:31,  max:42,  name:"🔒 Le Fragilisé(e)",      icon:"🔒", color:"#ef4444", desc:"Des expériences difficiles semblent avoir laissé des traces. Tu n'es pas seul(e) et ce que tu as vécu mérite d'être entendu." },
+  { min:43,  max:55,  name:"🌊 Le Submergé(e)",       icon:"🌊", color:"#dc2626", desc:"Tu sembles avoir traversé des situations intenses qui ont pu te dépasser. Parler à un adulte de confiance ou à un professionnel peut vraiment aider." },
+  { min:56,  max:68,  name:"🩹 Le Blessé(e)",         icon:"🩹", color:"#b91c1c", desc:"Les réponses indiquent une exposition répétée à des situations préoccupantes. Tu mérites un soutien et une écoute bienveillante." },
+  { min:69,  max:82,  name:"🆘 En Détresse",           icon:"🆘", color:"#991b1b", desc:"Ton profil révèle des expériences particulièrement lourdes. Il est vraiment important que tu puisses en parler à quelqu'un — un adulte de confiance, un médecin ou le 119." },
+  { min:83,  max:999, name:"🚨 Victime Avérée",        icon:"🚨", color:"#7f1d1d", desc:"Les éléments que tu as partagés sont très sérieux. Tu n'es pas responsable de ce que tu as vécu. Appelle le 119 (numéro national de protection de l'enfance) ou parles-en à un adulte de confiance immédiatement." },
+]
+
+/* ══ STATE ══ */
+let ageMode    = null   // 'majeur' | 'mineur'
+let qIndex     = 0
+let answers    = {}
+let activeQs   = []
+let scoreOui   = 0
+let scoreSais  = 0
+let scoreNon   = 0
+let totalScore = 0
+
+/* ══ START ══ */
+function startQuestionnaire() { showScreen('screen-age') }
+
+function chooseAge(mode) {
+  ageMode = mode
+  answers = {}; qIndex = 0; scoreOui = 0; scoreSais = 0; scoreNon = 0; totalScore = 0
+  buildActiveQs()
+  showScreen('screen-questionnaire')
+  renderQ()
+}
+
+function buildActiveQs() {
+  const base = ageMode === 'mineur' ? Q_MINEUR : Q_MAJEUR
+  activeQs = base.filter(q => {
+    if (q.cond    && answers[q.cond]    !== 'oui') return false
+    if (q.condNon && answers[q.condNon] !== 'non') return false
+    return true
+  })
+}
+
+function renderQ() {
+  buildActiveQs()
+  if (qIndex >= activeQs.length) { showResult(); return }
+
+  const q     = activeQs[qIndex]
+  const total = activeQs.length
+
+  document.getElementById('q-num').textContent      = `Question ${qIndex + 1}`
+  document.getElementById('q-text').textContent     = q.text
+  document.getElementById('q-prog-fill').style.width = Math.round(qIndex / total * 100) + '%'
+  document.getElementById('q-prog-label').textContent = `Question ${qIndex + 1} / ${total}`
+
+  const wrap = document.getElementById('q-options-wrap')
+  wrap.innerHTML = ''
+  const btn = document.getElementById('q-btn-next')
+  btn.disabled = true
+  btn.textContent = qIndex === total - 1 ? 'Voir mon profil 🎯' : 'Suivant →'
+
+  if (q.type === 'yn3') {
+    const div = document.createElement('div')
+    div.className = 'q-options'
+    ;[{val:'oui', label:'✅ Oui'}, {val:'sais', label:'🤔 Je sais pas'}, {val:'non', label:'❌ Non'}]
+    .forEach(o => {
+      const b = document.createElement('button')
+      b.className = 'q-opt' + (answers[q.id] === o.val ? ' selected' : '')
+      b.innerHTML = `<span>${o.label}</span>`
+      b.onclick = () => {
+        div.querySelectorAll('.q-opt').forEach(x => x.classList.remove('selected'))
+        b.classList.add('selected')
+        answers[q.id] = o.val
+        btn.disabled = false
+        buildActiveQs()
+        // recalc label
+        btn.textContent = qIndex === activeQs.length - 1 ? 'Voir mon profil 🎯' : 'Suivant →'
+      }
+      if (answers[q.id] === o.val) btn.disabled = false
+      div.appendChild(b)
+    })
+    wrap.appendChild(div)
+
+  } else if (q.type === 'check') {
+    if (!answers[q.id]) answers[q.id] = []
+    const div = document.createElement('div')
+    div.className = 'q-checklist'
+    q.options.forEach(opt => {
+      const b = document.createElement('button')
+      b.className = 'q-check' + (answers[q.id].includes(opt) ? ' selected' : '')
+      b.textContent = opt
+      b.onclick = () => {
+        b.classList.toggle('selected')
+        const arr = answers[q.id]
+        const i = arr.indexOf(opt)
+        if (i >= 0) arr.splice(i, 1); else arr.push(opt)
+      }
+      div.appendChild(b)
+    })
+    wrap.appendChild(div)
+    btn.disabled = false
+    btn.textContent = qIndex === activeQs.length - 1 ? 'Voir mon profil 🎯' : 'Passer →'
+  }
+}
+
+function nextQ() {
+  const q   = activeQs[qIndex]
+  const ans = answers[q.id]
+  if (q.type === 'yn3') {
+    if (ans === 'oui')  { totalScore += q.score || 0; scoreOui++ }
+    if (ans === 'sais') { totalScore += Math.round((q.score||0) * 0.4); scoreSais++ }
+    if (ans === 'non')  { scoreNon++ }
+  } else if (q.type === 'check') {
+    totalScore += (ans?.length || 0) * (q.score || 1)
+  }
+  qIndex++
+  buildActiveQs()
+  if (qIndex >= activeQs.length) { showResult(); return }
+  renderQ()
+}
+
+function showResult() {
+  const profiles = ageMode === 'mineur' ? PROFILES_MINEUR : PROFILES_MAJEUR
+  const profile  = profiles.find(p => totalScore >= p.min && totalScore <= p.max) || profiles[profiles.length-1]
+  const pct = Math.min(100, Math.round(totalScore / 170 * 100))
+  document.getElementById('r-icon').textContent = profile.icon
+  document.getElementById('r-name').textContent = profile.name
+  document.getElementById('r-desc').textContent = profile.desc
+  document.getElementById('r-pct').textContent  = pct + '%'
+  document.getElementById('r-oui').textContent  = scoreOui
+  document.getElementById('r-sais').textContent = scoreSais
+  document.getElementById('r-non').textContent  = scoreNon
+  const bar = document.getElementById('r-bar')
+  bar.style.background = profile.color
+  setTimeout(() => { bar.style.width = pct + '%' }, 100)
+  showScreen('screen-result')
+}
+
+function restartQ() { showScreen('screen-age') }
+
+
+/* ══════════════════════════════
+   MODE SORTIR AVEC
+══════════════════════════════ */
+let sortirDeck = [], sortirIdx = 0, sortirOui = 0, sortirNon = 0, sortirOuiMin = 0, sortirMinCount = 0
+let sortirDragging = false, sortirStartX = 0, sortirDx = 0, sortirAnswered = false
+
+async function startSortir() {
+  showScreen('screen-sortir')
+  sortirIdx=0; sortirOui=0; sortirNon=0; sortirOuiMin=0; sortirMinCount=0; sortirAnswered=false
+  document.getElementById('sortir-loading').style.display='flex'
+  const imgEl = document.getElementById('sortir-card').querySelector('img')
+  if(imgEl) imgEl.remove()
+  try {
+    const res = await fetch('/api/sortir')
+    sortirDeck = await res.json()
+    document.getElementById('sortir-loading').style.display='none'
+    renderSortir()
+  } catch(e) {
+    document.getElementById('sortir-loading').textContent='Erreur chargement'
+  }
+}
+
+function renderSortir() {
+  if(sortirIdx >= sortirDeck.length) { showSortirResult(); return }
+  sortirAnswered = false
+  const item = sortirDeck[sortirIdx]
+  const card  = document.getElementById('sortir-card')
+  let img = card.querySelector('img')
+  if(!img) { img=document.createElement('img'); img.alt=''; card.insertBefore(img, card.querySelector('.swipe-grad')); }
+  img.src = item.src
+  card.style.transition='none'; card.style.transform=''; card.style.opacity='1'
+  document.getElementById('ov-oui').style.opacity=0
+  document.getElementById('ov-non').style.opacity=0
+  const _shO=document.getElementById('sh-oui'); const _shN=document.getElementById('sh-non')
+  if(_shO) _shO.style.opacity=0; if(_shN) _shN.style.opacity=0
+  document.getElementById('sortir-prog').textContent = (sortirIdx+1)+' / '+sortirDeck.length
+}
+
+function sortirChoose(dir) {
+  if(sortirAnswered) return
+  sortirAnswered = true
+  const item = sortirDeck[sortirIdx]
+  if(dir==='oui') { sortirOui++; if(item.type==='mineur'){ sortirOuiMin++; sortirMinCount++ } }
+  else { sortirNon++; if(item.type==='mineur') sortirMinCount++ }
+
+  document.getElementById('ov-oui').style.opacity=0
+  document.getElementById('ov-non').style.opacity=0
+
+  const card = document.getElementById('sortir-card')
+  const tx   = dir==='oui' ? -600 : 600
+  card.style.transition='transform 0.38s ease, opacity 0.38s'
+  card.style.transform=`translateX(${tx}px) rotate(${dir==='oui'?-18:18}deg)`
+  card.style.opacity='0'
+  setTimeout(()=>{ sortirIdx++; renderSortir() }, 400)
+}
+
+function showSortirResult() {
+  showScreen('screen-sortir-result')
+  const pctDetraque = sortirMinCount>0 ? Math.round(sortirOuiMin/sortirMinCount*100) : 0
+  document.getElementById('sr-oui').textContent  = sortirOui
+  document.getElementById('sr-non').textContent  = sortirNon
+  document.getElementById('sr-min').textContent  = sortirMinCount
+  document.getElementById('sr-oui-min').textContent = sortirOuiMin
+  document.getElementById('sr-pct').textContent  = pctDetraque+'%'
+  setTimeout(()=>{ document.getElementById('sr-fill').style.width=pctDetraque+'%' }, 100)
+  let icon='😇', label="Profil sain — aucun interet pour les mineurs detecte."
+  if(pctDetraque>=80){ icon='💀'; label="Niveau detraque maximal. Tu vois ici les mineurs comme des partenaires potentiels." }
+  else if(pctDetraque>=60){ icon='🐺'; label="Profil preoccupant. Beaucoup trop d'acceptations de mineurs." }
+  else if(pctDetraque>=40){ icon='⚠️'; label="Resultat ambigu. Quelques acceptations de mineurs a surveiller." }
+  else if(pctDetraque>=20){ icon='👁️'; label="Quelques signaux faibles. Reste dans les limites." }
+  document.getElementById('sr-icon').textContent  = icon
+  document.getElementById('sr-label').textContent = label
+}
+
+// Drag sortir — listeners délégués pour éviter null au chargement
+function getSortirCard() { return document.getElementById('sortir-card') }
+
+document.addEventListener('mousedown', e=>{
+  const sc = getSortirCard()
+  if(!sc || !e.composedPath().includes(sc)) return
+  if(sortirAnswered||!sortirDeck.length) return
+  sortirDragging=true; sortirStartX=e.clientX; sortirDx=0; sc.style.transition='none'; e.preventDefault()
+})
+document.addEventListener('mousemove', e=>{
+  if(!sortirDragging) return
+  const sc = getSortirCard(); if(!sc) return
+  sortirDx=e.clientX-sortirStartX
+  sc.style.transform=`translateX(${sortirDx}px) rotate(${sortirDx*0.05}deg)`
+  const t=50
+  const shOui = document.getElementById('sh-oui')
+  const shNon = document.getElementById('sh-non')
+  if(sortirDx<-t){
+    const f=Math.min(1,(-sortirDx-t)/80)
+    document.getElementById('ov-oui').style.opacity=f; document.getElementById('ov-non').style.opacity=0
+    if(shOui) shOui.style.opacity=f; if(shNon) shNon.style.opacity=0
+  } else if(sortirDx>t){
+    const f=Math.min(1,(sortirDx-t)/80)
+    document.getElementById('ov-non').style.opacity=f; document.getElementById('ov-oui').style.opacity=0
+    if(shNon) shNon.style.opacity=f; if(shOui) shOui.style.opacity=0
+  } else {
+    document.getElementById('ov-oui').style.opacity=0; document.getElementById('ov-non').style.opacity=0
+    if(shOui) shOui.style.opacity=0; if(shNon) shNon.style.opacity=0
+  }
+})
+document.addEventListener('mouseup', ()=>{
+  if(!sortirDragging) return
+  sortirDragging=false
+  const sc = getSortirCard()
+  if(sortirDx<-90) sortirChoose('oui')
+  else if(sortirDx>90) sortirChoose('non')
+  else if(sc){ sc.style.transition='transform 0.25s'; sc.style.transform=''; document.getElementById('ov-oui').style.opacity=0; document.getElementById('ov-non').style.opacity=0 }
+  sortirDx=0
+})
+document.addEventListener('touchstart', e=>{
+  const sc = getSortirCard()
+  if(!sc || !e.composedPath().includes(sc)) return
+  if(sortirAnswered||!sortirDeck.length) return
+  sortirDragging=true; sortirStartX=e.touches[0].clientX; sortirDx=0; sc.style.transition='none'
+},{passive:true})
+document.addEventListener('touchmove', e=>{
+  if(!sortirDragging) return
+  const sc = getSortirCard(); if(!sc) return
+  sortirDx=e.touches[0].clientX-sortirStartX
+  sc.style.transform=`translateX(${sortirDx}px) rotate(${sortirDx*0.05}deg)`
+  const t=50
+  const shOui = document.getElementById('sh-oui')
+  const shNon = document.getElementById('sh-non')
+  if(sortirDx<-t){
+    const f=Math.min(1,(-sortirDx-t)/80)
+    document.getElementById('ov-oui').style.opacity=f; document.getElementById('ov-non').style.opacity=0
+    if(shOui) shOui.style.opacity=f; if(shNon) shNon.style.opacity=0
+  } else if(sortirDx>t){
+    const f=Math.min(1,(sortirDx-t)/80)
+    document.getElementById('ov-non').style.opacity=f; document.getElementById('ov-oui').style.opacity=0
+    if(shNon) shNon.style.opacity=f; if(shOui) shOui.style.opacity=0
+  } else {
+    document.getElementById('ov-oui').style.opacity=0; document.getElementById('ov-non').style.opacity=0
+    if(shOui) shOui.style.opacity=0; if(shNon) shNon.style.opacity=0
+  }
+},{passive:true})
+document.addEventListener('touchend', ()=>{
+  if(!sortirDragging) return
+  sortirDragging=false
+  const sc = getSortirCard()
+  if(sortirDx<-90) sortirChoose('oui')
+  else if(sortirDx>90) sortirChoose('non')
+  else if(sc){ sc.style.transition='transform 0.25s'; sc.style.transform=''; document.getElementById('ov-oui').style.opacity=0; document.getElementById('ov-non').style.opacity=0 }
+  sortirDx=0
+})
+
+/* ══════════════════════════════
+   MODE DEVINE L'ÂGE
+══════════════════════════════ */
+let devineDeck=[], devineIdx=0, devineGuesses=[], devineAnswered=false
+
+async function startDevine() {
+  showScreen('screen-devine')
+  devineIdx=0; devineGuesses=[]; devineAnswered=false
+  document.getElementById('devine-loading').style.display='flex'
+  document.getElementById('devine-img').style.display='none'
+  document.getElementById('devine-slider').value=25
+  updateDevineSlider(25)
+  try {
+    const res = await fetch('/api/devine')
+    devineDeck = await res.json()
+    document.getElementById('devine-loading').style.display='none'
+    renderDevine()
+  } catch(e) {
+    document.getElementById('devine-loading').textContent='Erreur — ajoutez des photos dans devine/ via admin'
+  }
+}
+
+function renderDevine() {
+  if(devineIdx >= devineDeck.length) { showDevineResult(); return }
+  devineAnswered = false
+  const item = devineDeck[devineIdx]
+  const img  = document.getElementById('devine-img')
+  img.src    = item.src
+  img.style.display='block'
+  document.getElementById('devine-loading').style.display='none'
+  document.getElementById('devine-prog-label').textContent = `Photo ${devineIdx+1} / ${devineDeck.length}`
+  document.getElementById('devine-slider').value=25
+  updateDevineSlider(25)
+  // Reset feedback
+  const fb = document.getElementById('devine-feedback')
+  if(fb) { fb.style.opacity='0'; fb.style.transition='none' }
+  const wrap = document.querySelector('.devine-img-wrap')
+  if(wrap) wrap.classList.remove('shake-devine')
+}
+
+function updateDevineSlider(val) {
+  document.getElementById('devine-age-val').textContent = val
+  const slider = document.getElementById('devine-slider')
+  const pct = (val-11)/(60-11)*100
+  slider.style.setProperty('--pct', pct+'%')
+}
+
+function validateDevine() {
+  if(devineAnswered) return
+  devineAnswered = true
+  const guess = parseInt(document.getElementById('devine-slider').value)
+  const real  = devineDeck[devineIdx].age
+  const ecart = Math.abs(guess - real)
+  const tropVieux = guess > real  // tu as mis plus vieux que la réalité
+  devineGuesses.push({ guess, real, ecart, sousMis: guess < real, src: devineDeck[devineIdx].src })
+
+  if(ecart > 1) {
+    // Vibration si dispo
+    if(navigator.vibrate) navigator.vibrate([80, 40, 80])
+
+    // Flash feedback sur l'image
+    const fb    = document.getElementById('devine-feedback')
+    const arrow = document.getElementById('df-arrow')
+    const label = document.getElementById('df-label')
+    const diff  = document.getElementById('df-diff')
+
+    if(tropVieux) {
+      // tu as mis un age trop élevé → flèche bas
+      fb.style.background = 'rgba(239,68,68,0.35)'
+      arrow.textContent   = '↓'
+      label.textContent   = 'Trop vieux'
+      diff.textContent    = '-' + ecart + ' ans'
+    } else {
+      // tu as mis un age trop bas → flèche haut
+      fb.style.background = 'rgba(59,130,246,0.35)'
+      arrow.textContent   = '↑'
+      label.textContent   = 'Trop jeune'
+      diff.textContent    = '+' + ecart + ' ans'
+    }
+    // Reset animation
+    arrow.classList.remove('df-bounce')
+    void arrow.offsetWidth
+    arrow.style.animation = 'none'
+    void arrow.offsetWidth
+    arrow.style.animation = ''
+
+    fb.style.opacity = '1'
+    fb.style.transition = 'none'
+
+    // Shake de la page
+    const wrap = document.querySelector('.devine-img-wrap')
+    if(wrap) {
+      wrap.classList.remove('shake-devine')
+      void wrap.offsetWidth
+      wrap.classList.add('shake-devine')
+    }
+
+    setTimeout(() => {
+      fb.style.transition = 'opacity 0.4s ease'
+      fb.style.opacity = '0'
+    }, 700)
+
+    setTimeout(() => { devineIdx++; renderDevine() }, 1000)
+  } else {
+    // Bonne réponse — pas de feedback négatif, juste passer
+    devineIdx++
+    setTimeout(() => renderDevine(), 200)
+  }
+}
+
+function showDevineResult() {
+  showScreen('screen-devine-result')
+  const n      = devineGuesses.length
+  const parfait = devineGuesses.filter(g => g.ecart === 0).length
+  const proche  = devineGuesses.filter(g => g.ecart === 1).length
+  const sous    = devineGuesses.filter(g => g.sousMis && g.ecart > 1).length
+  const sur     = devineGuesses.filter(g => !g.sousMis && g.ecart > 1).length
+
+  // score détraqué
+  const detraque = devineGuesses.filter(g => g.real >= 18 && g.guess < 18).length
+  const pctDet   = Math.min(100, Math.round(detraque / Math.max(1,n) * 100))
+
+  document.getElementById('dr-parfait').textContent = parfait
+  document.getElementById('dr-ecart').textContent   = proche
+  document.getElementById('dr-sous').textContent    = sous
+  document.getElementById('dr-sur').textContent     = sur
+  document.getElementById('dr-pct').textContent     = pctDet + '%'
+  setTimeout(() => { document.getElementById('dr-fill').style.width = pctDet + '%' }, 100)
+
+  const erreurs = devineGuesses.filter(g => g.ecart >= 5)
+  document.getElementById('btn-erreurs').textContent =
+    "👁 Erreurs severes (" + erreurs.length + " photos, 5+ ans)"
+  document.getElementById('btn-erreurs').style.display = erreurs.length ? 'block' : 'none'
+
+  const ecartMoyen = n > 0 ? (devineGuesses.reduce((a,g) => a + g.ecart, 0) / n).toFixed(1) : 0
+  let icon = '🎯', label = "Bonne estimation globale !"
+  if(parfait >= n * 0.5) { icon = '🏆'; label = "Incroyable ! La moitié de tes estimations sont parfaites !" }
+  else if(ecartMoyen > 8) { icon = '😵'; label = "Estimations tres imprecises. Gros ecarts !" }
+  else if(ecartMoyen > 4) { icon = '😅'; label = "Quelques difficultes a estimer les ages." }
+  if(pctDet > 50) { icon = '💀'; label = "Tu as souvent cru que des adultes etaient mineurs. Profil preoccupant." }
+  document.getElementById('dr-icon').textContent  = icon
+  document.getElementById('dr-label').textContent = label
+}
+
+function toggleErreurs() {
+  const panel = document.getElementById('erreurs-panel')
+  if(panel.style.display !== 'none') { panel.style.display = 'none'; return }
+
+  // Filtrer par index pour éviter les doublons (chaque guess a son index dans devineDeck)
+  const erreurs = devineGuesses
+    .map((g, i) => ({ ...g, deckIdx: i }))
+    .filter(g => g.ecart >= 5)
+
+  if(!erreurs.length) return
+
+  panel.innerHTML = ''
+  erreurs.forEach(g => {
+    const item = { src: g.src, age: g.real }
+    const div  = document.createElement('div')
+    div.style.cssText = 'display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:10px 14px;margin-bottom:8px;'
+    const img = document.createElement('img')
+    img.src   = item.src || ''
+    img.style.cssText = 'width:56px;height:56px;object-fit:cover;border-radius:10px;flex-shrink:0;cursor:pointer;transition:transform 0.1s;'
+    img.title = 'Cliquer pour agrandir'
+    img.onclick = () => openLightbox(item.src)
+    img.onmouseover = () => img.style.transform = 'scale(1.08)'
+    img.onmouseout  = () => img.style.transform = ''
+    const info = document.createElement('div')
+    info.style.flex = '1'
+    const diff = g.guess > g.real ? '-' + g.ecart : '+' + g.ecart
+    const col  = g.guess > g.real ? '#ef4444' : '#60a5fa'
+    info.innerHTML =
+      '<div style="font-size:14px;font-weight:800;color:#fff;">Tu as mis : ' + g.guess + ' ans</div>' +
+      '<div style="font-size:12px;color:rgba(255,255,255,0.5);">Reel : ' + g.real + ' ans</div>' +
+      '<div style="font-size:13px;font-weight:700;color:' + col + ';">' + diff + ' ans</div>'
+    div.appendChild(img)
+    div.appendChild(info)
+    panel.appendChild(div)
+  })
+  panel.style.display = 'block'
+}
+
+/* ── LIGHTBOX ── */
+function openLightbox(src) {
+  let lb = document.getElementById('lightbox')
+  if(!lb) {
+    lb = document.createElement('div')
+    lb.id = 'lightbox'
+    lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;animation:fadeIn 0.2s ease;'
+    lb.onclick = () => lb.remove()
+    document.body.appendChild(lb)
+  }
+  lb.innerHTML = ''
+  const img = document.createElement('img')
+  img.src = src
+  img.style.cssText = 'max-width:90vw;max-height:90vh;object-fit:contain;border-radius:16px;box-shadow:0 8px 60px rgba(0,0,0,0.8);'
+  lb.appendChild(img)
+  lb.style.display = 'flex'
+
+  // Fermer avec Escape
+  const onKey = e => { if(e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onKey) } }
+  document.addEventListener('keydown', onKey)
+}
+
+
+/* ── KEYBOARD SHORTCUTS ── */
+document.addEventListener('keydown', e => {
+  // Jeu principal (mineur/pas mineur)
+  if (document.getElementById('screen-game') && document.getElementById('screen-game').classList.contains('active')) {
+    if (e.key === 'ArrowLeft')  { closeTuto(); choose('mineur') }
+    if (e.key === 'ArrowRight') { closeTuto(); choose('majeur') }
+  }
+  // Pourrais-tu sortir avec
+  if (document.getElementById('screen-sortir') && document.getElementById('screen-sortir').classList.contains('active')) {
+    if (e.key === 'ArrowLeft')  sortirChoose('oui')
+    if (e.key === 'ArrowRight') sortirChoose('non')
+  }
+})
+</script>
+
+<!-- ══ SCREEN SORTIR AVEC ══ -->
+<div class="screen" id="screen-sortir" style="flex:1;min-height:0;flex-direction:column;">
+  <button class="q-back" onclick="goMenu()">← Retour</button>
+  <div class="q-title">💘 Pourrais-tu sortir avec ?</div>
+  <div class="q-sub">Swipe ← si oui, → si non. 30 profils.</div>
+
+  <div class="swipe-labels">
+    <div class="swipe-lbl yes">← Je pourrais</div>
+    <div class="swipe-lbl no">Je ne pourrais pas →</div>
+  </div>
+
+  <div class="swipe-scene" id="sortir-scene">
+    <div class="ghost-s"></div>
+    <div class="ghost-s"></div>
+    <!-- hints latéraux pendant drag -->
+    <div style="position:absolute;left:12px;right:12px;top:50%;transform:translateY(-50%);display:flex;justify-content:space-between;pointer-events:none;z-index:15;padding:0 12px;">
+      <div id="sh-oui" style="display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0;transition:opacity 0.1s;">
+        <div style="font-size:32px;">👈</div>
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#22c55e;">Je pourrais</div>
+      </div>
+      <div id="sh-non" style="display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0;transition:opacity 0.1s;">
+        <div style="font-size:32px;">👉</div>
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#ef4444;">Je ne pourrais pas</div>
+      </div>
+    </div>
+    <div class="swipe-card-wrap" id="sortir-card">
+      <div id="sortir-loading" style="display:flex;align-items:center;justify-content:center;height:100%;font-size:13px;color:rgba(255,255,255,0.4);">Chargement…</div>
+      <div class="swipe-grad"></div>
+      <div class="swipe-ov-s" id="ov-oui"><div class="stamp-s">← Je pourrais</div></div>
+      <div class="swipe-ov-s" id="ov-non"><div class="stamp-s">Non →</div></div>
+    </div>
+  </div>
+  <div class="swipe-prog" id="sortir-prog" style="font-size:13px;color:rgba(255,255,255,0.35);text-align:center;padding:10px 0 4px;flex-shrink:0;">0 / 30</div>
+</div>
+
+<!-- ══ SCREEN RÉSULTAT SORTIR ══ -->
+<div class="screen" id="screen-sortir-result">
+  <button class="q-back" onclick="goMenu()">← Retour</button>
+  <div class="q-title">💘 Résultats</div>
+  <div class="score-big" id="sr-icon">🎯</div>
+  <div class="score-label" id="sr-label">Analyse…</div>
+  <div class="stats-grid">
+    <div class="stat-box"><div class="sv" id="sr-oui" style="color:#22c55e">0</div><div class="sl">Je pourrais</div></div>
+    <div class="stat-box"><div class="sv" id="sr-non" style="color:#ef4444">0</div><div class="sl">Je ne pourrais pas</div></div>
+    <div class="stat-box"><div class="sv" id="sr-min">0</div><div class="sl">Mineurs vus</div></div>
+    <div class="stat-box"><div class="sv" id="sr-oui-min" style="color:#ef4444">0</div><div class="sl">Mineurs acceptés</div></div>
+  </div>
+  <div class="detraque-bar">
+    <div class="detraque-label"><span>Innocent</span><span id="sr-pct">0%</span><span>Détraqué</span></div>
+    <div class="detraque-track"><div class="detraque-fill" id="sr-fill" style="width:0%"></div></div>
+  </div>
+  <div class="result-btns" style="margin-top:20px;">
+    <button class="btn-secondary" onclick="startSortir()">↩ Rejouer</button>
+    <button class="btn-primary" onclick="goMenu()">← Menu</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN DEVINE ══ -->
+<div class="screen" id="screen-devine">
+  <button class="q-back" onclick="goMenu()">← Retour</button>
+  <div class="q-title">🔍 Devine l'âge</div>
+  <div class="q-sub" id="devine-prog-label">Photo 1 / 30</div>
+
+  <div class="devine-scene">
+    <div class="devine-img-wrap" style="position:relative;">
+      <img id="devine-img" src="" alt="" style="display:none"/>
+      <div id="devine-loading" style="display:flex;align-items:center;justify-content:center;height:100%;font-size:13px;color:rgba(255,255,255,0.4);">Chargement…</div>
+      <div id="devine-feedback">
+        <div class="df-arrow" id="df-arrow">↓</div>
+        <div class="df-label" id="df-label">Trop vieux</div>
+        <div class="df-diff" id="df-diff">+6 ans</div>
+      </div>
+    </div>
+    <div class="devine-age-display"><span id="devine-age-val">25</span> <span>ans</span></div>
+    <div class="devine-slider-wrap">
+      <div class="devine-slider-label"><span>11 ans</span><span>60 ans</span></div>
+      <input type="range" class="age-slider" id="devine-slider" min="11" max="60" value="25" oninput="updateDevineSlider(this.value)"/>
+    </div>
+    <button class="btn-devine-valid" onclick="validateDevine()">Valider →</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN RÉSULTAT DEVINE ══ -->
+<div class="screen" id="screen-devine-result">
+  <button class="q-back" onclick="goMenu()">← Retour</button>
+  <div class="q-title">🔍 Résultats Devine</div>
+  <div class="score-big" id="dr-icon">🎯</div>
+  <div class="score-label" id="dr-label">Analyse…</div>
+  <div class="stats-grid">
+    <div class="stat-box"><div class="sv" id="dr-parfait" style="color:#22c55e">0</div><div class="sl">Perfect 🎯</div></div>
+    <div class="stat-box"><div class="sv" id="dr-ecart" style="color:#f59e0b">0</div><div class="sl">≤1 an d'écart</div></div>
+    <div class="stat-box"><div class="sv" id="dr-sous" style="color:#60a5fa">0</div><div class="sl">Sous-estimés ↑</div></div>
+    <div class="stat-box"><div class="sv" id="dr-sur" style="color:#ef4444">0</div><div class="sl">Sur-estimés ↓</div></div>
+  </div>
+  <!-- Bouton voir les erreurs sévères -->
+  <button onclick="toggleErreurs()" id="btn-erreurs" style="width:100%;margin-top:12px;padding:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:rgba(255,255,255,0.6);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:0.04em;transition:background 0.15s;">
+    👁 Voir les erreurs severes (5+ ans d'ecart)
+  </button>
+  <div id="erreurs-panel" style="display:none;margin-top:12px;"></div>
+  <div class="detraque-bar">
+    <div class="detraque-label"><span>Innocent</span><span id="dr-pct">0%</span><span>Détraqué</span></div>
+    <div class="detraque-track"><div class="detraque-fill" id="dr-fill" style="width:0%"></div></div>
+  </div>
+  <div class="result-btns" style="margin-top:20px;">
+    <button class="btn-secondary" onclick="startDevine()">↩ Rejouer</button>
+    <button class="btn-primary" onclick="goMenu()">← Menu</button>
+  </div>
+</div>
+
+
+
+</body>
+</html>
+<!-- Ce bloc est ajouté dynamiquement via JS — voir ci-dessous -->
